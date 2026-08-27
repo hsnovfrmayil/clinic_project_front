@@ -1,43 +1,31 @@
 import clsx from "clsx";
+import Image from "next/image";
 
-export function LogoMark({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 64 64"
-      fill="none"
-      className={clsx("shrink-0", className)}
-      aria-hidden
-    >
-      <circle
-        cx="32"
-        cy="32"
-        r="26"
-        stroke="currentColor"
-        strokeWidth="3.4"
-        strokeLinecap="round"
-        strokeDasharray="132 30"
-        strokeDashoffset="-10"
-      />
-      <circle cx="25" cy="32" r="13" fill="currentColor" />
-    </svg>
-  );
-}
-
-export default function Logo({
-  className,
-  markOnly = false,
-}: {
+type LogoProps = {
   className?: string;
-  markOnly?: boolean;
-}) {
+  /** Dark logo on light backgrounds (navbar) */
+  dark?: boolean;
+};
+
+export default function Logo({ className, dark = false }: LogoProps) {
   return (
-    <span className={clsx("inline-flex items-center gap-2.5 select-none", className)}>
-      <LogoMark className="h-[22px] w-[22px]" />
-      {!markOnly && (
-        <span className="font-logo text-[16px] font-semibold tracking-[0.22em] uppercase">
-          Eonage
-        </span>
+    <span
+      className={clsx(
+        "relative block h-11 w-[108px] shrink-0 overflow-hidden sm:h-[52px] sm:w-[130px] lg:h-[60px] lg:w-[260px]",
+        className
       )}
+    >
+      <Image
+        src="/eonage-logo.png"
+        alt="EONAGE"
+        width={520}
+        height={80}
+        priority
+        className={clsx(
+          "absolute left-0 top-1/2 h-5 w-auto max-w-none -translate-y-1/2 origin-left scale-[1.3] sm:h-[23px] sm:scale-150 lg:h-[25px] lg:scale-[2]",
+          dark ? "brightness-0 dark:invert" : "brightness-100"
+        )}
+      />
     </span>
   );
 }

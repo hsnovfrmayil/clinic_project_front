@@ -71,7 +71,7 @@ export default function ScanCompare() {
         style={{
           clipPath: `inset(0 ${100 - pos}% 0 0)`,
           background:
-            "radial-gradient(circle at 70% 30%, rgba(111,184,255,0.18), transparent 60%), #0c1116",
+            "radial-gradient(circle at 70% 30%, rgba(176,190,204,0.18), transparent 60%), #0c1116",
         }}
       >
         <span className="ml-auto w-fit rounded-full border border-ion/50 bg-ion/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-ion">
@@ -106,7 +106,7 @@ export default function ScanCompare() {
             e.currentTarget.setPointerCapture(e.pointerId);
           }}
           aria-label="Перетащите, чтобы сравнить до и после"
-          className="absolute top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ion bg-ink text-ion shadow-[0_0_24px_rgba(111,184,255,0.45)]"
+          className="absolute top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ion bg-ink text-ion shadow-[0_0_24px_rgba(176,190,204,0.45)]"
         >
           <MoveHorizontal size={16} />
         </button>

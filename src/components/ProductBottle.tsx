@@ -2,7 +2,7 @@ import { BottleVariant } from "@/lib/types";
 import clsx from "clsx";
 
 const TINTS = {
-  ion: { glow: "#6fb8ff", body: "#dfe6ec", cap: "#cfd6dc" },
+  ion: { glow: "#b4c0cc", body: "#e4eaf0", cap: "#d2dae2" },
   silver: { glow: "#c9cdd3", body: "#e6e7e9", cap: "#b9bcc1" },
   gold: { glow: "#cbb88a", body: "#e9e2d3", cap: "#cbb88a" },
 } as const;

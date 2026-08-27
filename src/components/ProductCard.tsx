@@ -2,16 +2,35 @@
 
 import { useRef } from "react";
 import Link from "next/link";
-import { Product } from "@/lib/types";
-import ProductBottle from "./ProductBottle";
-import Badge from "./Badge";
+import type { Product } from "@/lib/api/types";
+import ProductMedia from "./ProductMedia";
 import PriceTag from "./PriceTag";
 import { useCart } from "@/lib/cart-context";
 import { Plus } from "lucide-react";
+import {
+  defaultVariant,
+  productHref,
+  variantLabel,
+  variantMrp,
+  variantPrice,
+} from "@/lib/money";
+import { productImage } from "@/lib/media";
 
-export default function ProductCard({ product }: { product: Product }) {
+export default function ProductCard({
+  product,
+  onNavigate,
+}: {
+  product: Product;
+  onNavigate?: () => void;
+}) {
   const { add } = useCart();
   const cardRef = useRef<HTMLDivElement>(null);
+  const variant = defaultVariant(product);
+  const price = variantPrice(variant);
+  const mrp = variantMrp(variant);
+  const brand = product.brands?.[0]?.name;
+  const category = product.categories?.[0]?.name;
+  const href = productHref(product);
 
   const handleMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const el = cardRef.current;
@@ -26,7 +45,8 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const handleLeave = () => {
     if (cardRef.current) {
-      cardRef.current.style.transform = "perspective(900px) rotateX(0deg) rotateY(0deg)";
+      cardRef.current.style.transform =
+        "perspective(900px) rotateX(0deg) rotateY(0deg)";
     }
   };
 
@@ -46,35 +66,39 @@ export default function ProductCard({ product }: { product: Product }) {
       />
 
       <Link
-        href={`/product/${product.slug}`}
-        className="relative flex h-64 items-center justify-center bg-panel-2 overflow-hidden"
+        href={href}
+        onClick={onNavigate}
+        className="relative flex h-64 items-center justify-center overflow-hidden bg-panel-2"
       >
-        <div className="absolute left-3 top-3 flex flex-col gap-1.5 z-10">
-          {product.bestseller && <Badge tone="gold">Бестселлер</Badge>}
-          {product.isNew && <Badge tone="ion">New</Badge>}
-        </div>
-        <ProductBottle
-          variant={product.bottle}
-          tint={product.tint}
-          className="h-48 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-1"
+        <ProductMedia
+          src={productImage(product)}
+          alt={product.name}
+          className="h-full w-full p-6"
+          bottleClassName="h-48 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-1"
         />
       </Link>
 
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-          {product.category} · {product.volume}
+          {[brand, category, variantLabel(variant)].filter(Boolean).join(" · ")}
         </div>
-        <Link href={`/product/${product.slug}`}>
-          <h3 className="font-medium leading-snug hover:text-ion transition-colors">
+        <Link href={href} onClick={onNavigate}>
+          <h3 className="font-medium leading-snug transition-colors hover:text-ion">
             {product.name}
           </h3>
         </Link>
-        <p className="text-sm text-silver line-clamp-2">{product.tagline}</p>
+        {product.description && (
+          <p className="line-clamp-2 text-sm text-silver">{product.description}</p>
+        )}
 
         <div className="mt-auto flex items-end justify-between gap-3 pt-3">
-          <PriceTag product={product} size="sm" />
+          <PriceTag
+            price={price}
+            oldPrice={mrp > price ? mrp : undefined}
+            size="sm"
+          />
           <button
-            onClick={() => add(product)}
+            onClick={() => add(product, variant)}
             aria-label={`Добавить ${product.name} в корзину`}
             className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-mist transition-colors hover:border-ion hover:bg-ion hover:text-ink"
           >

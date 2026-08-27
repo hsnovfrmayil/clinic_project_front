@@ -8,35 +8,57 @@ import {
   useMemo,
   useState,
 } from "react";
-import { Product } from "./types";
+import { DeliveryId, getDeliveryFee } from "./delivery";
+import type { Product, ProductVariant } from "./api/types";
+import { defaultVariant, variantPrice } from "./money";
 
 export interface CartLine {
   product: Product;
+  variant: ProductVariant;
+  quantity: number;
+}
+
+export interface CartToast {
+  id: number;
+  product: Product;
+  variant: ProductVariant;
   quantity: number;
 }
 
 interface CartContextValue {
   lines: CartLine[];
-  add: (product: Product, quantity?: number) => void;
-  remove: (productId: string) => void;
-  setQuantity: (productId: string, quantity: number) => void;
+  add: (product: Product, variant?: ProductVariant | null, quantity?: number) => void;
+  remove: (variantId: string) => void;
+  setQuantity: (variantId: string, quantity: number) => void;
   clear: () => void;
-  isOpen: boolean;
-  open: () => void;
-  close: () => void;
+  delivery: DeliveryId;
+  setDelivery: (id: DeliveryId) => void;
+  deliveryAddress: string;
+  setDeliveryAddress: (address: string) => void;
   count: number;
   subtotal: number;
-  bonusEarned: number;
+  deliveryFee: number;
+  total: number;
+  toast: CartToast | null;
+  dismissToast: () => void;
+  cartPulse: number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-const STORAGE_KEY = "eonage-cart";
+const STORAGE_KEY = "eonage-cart-v2";
+
+function lineKey(variantId: string | number) {
+  return String(variantId);
+}
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [lines, setLines] = useState<CartLine[]>([]);
-  const [isOpen, setIsOpen] = useState(false);
+  const [delivery, setDelivery] = useState<DeliveryId>("courier");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [hydrated, setHydrated] = useState(false);
+  const [toast, setToast] = useState<CartToast | null>(null);
+  const [cartPulse, setCartPulse] = useState(0);
 
   useEffect(() => {
     try {
@@ -53,61 +75,90 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(lines));
   }, [lines, hydrated]);
 
-  const add = useCallback((product: Product, quantity = 1) => {
-    setLines((prev) => {
-      const existing = prev.find((l) => l.product.id === product.id);
-      if (existing) {
-        return prev.map((l) =>
-          l.product.id === product.id
-            ? { ...l, quantity: l.quantity + quantity }
-            : l
-        );
-      }
-      return [...prev, { product, quantity }];
-    });
-    setIsOpen(true);
+  useEffect(() => {
+    if (!toast) return;
+    const timer = window.setTimeout(() => setToast(null), 2200);
+    return () => window.clearTimeout(timer);
+  }, [toast]);
+
+  const add = useCallback(
+    (product: Product, variant?: ProductVariant | null, quantity = 1) => {
+      const selected = variant ?? defaultVariant(product);
+      if (!selected) return;
+
+      setLines((prev) => {
+        const key = lineKey(selected.id);
+        const existing = prev.find((l) => lineKey(l.variant.id) === key);
+        if (existing) {
+          return prev.map((l) =>
+            lineKey(l.variant.id) === key
+              ? { ...l, quantity: l.quantity + quantity, product, variant: selected }
+              : l
+          );
+        }
+        return [...prev, { product, variant: selected, quantity }];
+      });
+      setToast({ id: Date.now(), product, variant: selected, quantity });
+      setCartPulse((n) => n + 1);
+    },
+    []
+  );
+
+  const remove = useCallback((variantId: string) => {
+    setLines((prev) => prev.filter((l) => lineKey(l.variant.id) !== variantId));
   }, []);
 
-  const remove = useCallback((productId: string) => {
-    setLines((prev) => prev.filter((l) => l.product.id !== productId));
-  }, []);
-
-  const setQuantity = useCallback((productId: string, quantity: number) => {
+  const setQuantity = useCallback((variantId: string, quantity: number) => {
     setLines((prev) =>
       quantity <= 0
-        ? prev.filter((l) => l.product.id !== productId)
+        ? prev.filter((l) => lineKey(l.variant.id) !== variantId)
         : prev.map((l) =>
-            l.product.id === productId ? { ...l, quantity } : l
+            lineKey(l.variant.id) === variantId ? { ...l, quantity } : l
           )
     );
   }, []);
 
   const clear = useCallback(() => setLines([]), []);
+  const dismissToast = useCallback(() => setToast(null), []);
 
   const value = useMemo<CartContextValue>(() => {
     const count = lines.reduce((sum, l) => sum + l.quantity, 0);
     const subtotal = lines.reduce(
-      (sum, l) => sum + l.product.price * l.quantity,
+      (sum, l) => sum + variantPrice(l.variant) * l.quantity,
       0
     );
-    const bonusEarned = lines.reduce(
-      (sum, l) => sum + l.product.bonusPoints * l.quantity,
-      0
-    );
+    const deliveryFee = getDeliveryFee(delivery);
+    const total = subtotal + deliveryFee;
     return {
       lines,
       add,
       remove,
       setQuantity,
       clear,
-      isOpen,
-      open: () => setIsOpen(true),
-      close: () => setIsOpen(false),
+      delivery,
+      setDelivery,
+      deliveryAddress,
+      setDeliveryAddress,
       count,
       subtotal,
-      bonusEarned,
+      deliveryFee,
+      total,
+      toast,
+      dismissToast,
+      cartPulse,
     };
-  }, [lines, add, remove, setQuantity, clear, isOpen]);
+  }, [
+    lines,
+    add,
+    remove,
+    setQuantity,
+    clear,
+    delivery,
+    deliveryAddress,
+    toast,
+    dismissToast,
+    cartPulse,
+  ]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }

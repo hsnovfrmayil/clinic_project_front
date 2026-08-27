@@ -1,18 +1,21 @@
-import { Product } from "@/lib/types";
 import clsx from "clsx";
+import { formatMoney } from "@/lib/money";
 
 export default function PriceTag({
-  product,
+  price,
+  oldPrice,
   size = "md",
   className,
 }: {
-  product: Product;
+  price: number;
+  oldPrice?: number;
   size?: "sm" | "md" | "lg";
   className?: string;
 }) {
-  const discount = product.oldPrice
-    ? Math.round(100 - (product.price / product.oldPrice) * 100)
-    : 0;
+  const discount =
+    oldPrice && oldPrice > price
+      ? Math.round(100 - (price / oldPrice) * 100)
+      : 0;
 
   const priceSize = {
     sm: "text-base",
@@ -22,20 +25,17 @@ export default function PriceTag({
 
   return (
     <div className={clsx("flex flex-wrap items-baseline gap-x-3 gap-y-1", className)}>
-      <span className={clsx("font-semibold", priceSize)}>${product.price}</span>
-      {product.oldPrice && (
+      <span className={clsx("font-semibold", priceSize)}>{formatMoney(price)}</span>
+      {discount > 0 && oldPrice ? (
         <>
-          <span className="text-silver-dim line-through text-sm">
-            ${product.oldPrice}
+          <span className="text-sm text-silver-dim line-through">
+            {formatMoney(oldPrice)}
           </span>
           <span className="text-[11px] font-semibold uppercase tracking-wide text-ion">
             −{discount}%
           </span>
         </>
-      )}
-      <span className="text-[11px] text-gold/90 tracking-wide">
-        +{product.bonusPoints} бонусов
-      </span>
+      ) : null}
     </div>
   );
 }

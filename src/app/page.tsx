@@ -5,8 +5,12 @@ import Reveal from "@/components/Reveal";
 import Counter from "@/components/Counter";
 import DiagonalMarquee from "@/components/DiagonalMarquee";
 import ScanCompare from "@/components/ScanCompare";
-import { products } from "@/lib/products";
-import { ScanFace, Sparkles, FlaskConical, ShieldCheck } from "lucide-react";
+import HeroSlider from "@/components/HeroSlider";
+import { fetchProducts, fetchSliders } from "@/lib/api/catalog";
+import { mediaUrl } from "@/lib/media";
+import { ScanFace, FlaskConical, ShieldCheck } from "lucide-react";
+
+export const dynamic = "force-dynamic";
 
 const MARQUEE_ITEMS = ["SCIENCE", "BEAUTY", "TECHNOLOGY"];
 const MARQUEE_ITEMS_2 = ["EONAGE GAMES", "ЖЁСТКАЯ ПРАВДА", "AI SKIN ANALYSIS"];
@@ -18,65 +22,28 @@ const STATS = [
   { value: 83, decimals: 0, suffix: "%", label: "точность AI-анализа" },
 ];
 
-export default function Home() {
-  const bestsellers = products.filter((p) => p.bestseller).slice(0, 4);
-  const newArrivals = products.filter((p) => p.isNew).slice(0, 3);
+export default async function Home() {
+  const [productRes, sliders] = await Promise.all([
+    fetchProducts({ limit: 8, sortBy: "id", order: "DESC" }).catch(() => ({
+      data: [],
+      meta: { page: 1, limit: 8, total: 0, totalPages: 0 },
+    })),
+    fetchSliders().catch(() => []),
+  ]);
+
+  const list = productRes.data ?? [];
+  const bestsellers = list.slice(0, 4);
+  const newArrivals = list.slice(0, 3);
+  const heroSlides = (sliders ?? []).map((s) => ({
+    id: String(s.id),
+    title: s.title,
+    link_url: s.link_url,
+    image: mediaUrl(s.upload?.file_path),
+  }));
 
   return (
     <div className="overflow-x-clip">
-      {/* HERO */}
-      <section className="relative overflow-hidden border-b border-line">
-        <div
-          className="pointer-events-none absolute inset-0 opacity-70"
-          style={{
-            background:
-              "radial-gradient(ellipse 60% 50% at 30% 0%, rgba(111,184,255,0.16), transparent 60%), radial-gradient(ellipse 50% 40% at 90% 20%, rgba(203,184,138,0.10), transparent 60%)",
-          }}
-        />
-        <div className="grain absolute inset-0" />
-
-        <div className="relative mx-auto flex max-w-7xl flex-col-reverse items-center gap-10 px-6 pb-20 pt-14 lg:flex-row lg:gap-16 lg:px-10 lg:pb-32 lg:pt-20">
-          <div className="flex-1 text-center lg:text-left">
-            <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-silver">
-              <Sparkles size={12} className="text-ion" />
-              Клиника из будущего · Москва
-            </span>
-            <h1 className="mt-6 font-display text-5xl leading-[1.02] tracking-tight sm:text-6xl lg:text-[5.5rem]">
-              Наука
-              <br />
-              долголетия{" "}
-              <span className="glitch italic text-ion">кожи</span>
-            </h1>
-            <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-silver lg:mx-0">
-              Собственная линия ухода клиники EONAGE — та же формула науки,
-              что и в наших процедурах, теперь в домашнем протоколе.
-            </p>
-            <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">
-              <LinkButton href="/catalog">В каталог</LinkButton>
-              <LinkButton href="/#technology" variant="outline">
-                AI Skin Analysis
-              </LinkButton>
-            </div>
-          </div>
-
-          <div className="relative flex flex-1 items-center justify-center">
-            <div className="relative flex h-72 w-72 items-center justify-center rounded-full border border-line sm:h-96 sm:w-96">
-              <div className="scan-grid scan-grid-animated absolute inset-3 rounded-full" />
-              <div className="absolute inset-6 rounded-full border border-line/70" />
-              <div className="scan-line absolute inset-x-6 top-6 h-px bg-gradient-to-r from-transparent via-ion to-transparent" />
-              <ProductBottle variant="dropper" tint="ion" className="h-52 sm:h-64" />
-
-              <div className="absolute -right-2 top-6 flex items-center gap-2 rounded-full border border-ion/40 bg-ink/80 px-3 py-1.5 text-[11px] text-ion backdrop-blur sm:right-2">
-                <span className="pulse-dot h-1.5 w-1.5 rounded-full bg-ion" />
-                83% точность скана
-              </div>
-              <div className="absolute -bottom-3 left-2 rounded-full border border-line bg-ink/80 px-3 py-1.5 text-[11px] text-silver backdrop-blur sm:left-6">
-                Анализ за 5 минут
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <HeroSlider slides={heroSlides} />
 
       <DiagonalMarquee items={MARQUEE_ITEMS} tone="light" />
 
@@ -96,8 +63,8 @@ export default function Home() {
           </LinkButton>
         </Reveal>
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {bestsellers.map((product, i) => (
-            <Reveal key={product.id} delay={i * 0.08}>
+            {bestsellers.map((product, i) => (
+            <Reveal key={String(product.id)} delay={i * 0.08}>
               <ProductCard product={product} />
             </Reveal>
           ))}
@@ -176,8 +143,8 @@ export default function Home() {
                 </li>
               ))}
             </ul>
-            <LinkButton href="/product/eonage-scanner-home" className="mt-9 inline-flex">
-              Смотреть устройство
+            <LinkButton href="/catalog" className="mt-9 inline-flex">
+              Смотреть каталог
             </LinkButton>
           </Reveal>
         </div>
@@ -211,8 +178,8 @@ export default function Home() {
             </h2>
           </Reveal>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {newArrivals.map((product, i) => (
-              <Reveal key={product.id} delay={i * 0.08}>
+              {newArrivals.map((product, i) => (
+              <Reveal key={String(product.id)} delay={i * 0.08}>
                 <ProductCard product={product} />
               </Reveal>
             ))}
