@@ -17,8 +17,10 @@ export function getApiBase() {
 /** @deprecated use getApiBase() — kept for simple imports */
 export const API_URL = API_ORIGIN;
 
+/** S3 bucket base — API `file_path` values are relative (e.g. `uploads/…`). */
 export const MEDIA_URL = (
-  process.env.NEXT_PUBLIC_MEDIA_URL || API_ORIGIN
+  process.env.NEXT_PUBLIC_MEDIA_URL ||
+  "https://s3.twcstorage.ru/13b112f8-40b6-4e5d-a0f1-d8613699d697"
 ).replace(/\/$/, "");
 
 export const AUTH_TOKEN_KEY = "eonage-token";
