@@ -8,9 +8,13 @@ import ProductMedia from "@/components/ProductMedia";
 import { Truck, ShieldCheck } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/api/types";
 import {
+  defaultAttributeSelection,
+  productAttributeGroups,
+  selectionLabel,
+} from "@/lib/attributes";
+import {
   defaultVariant,
   toNumber,
-  variantLabel,
   variantMrp,
   variantPrice,
 } from "@/lib/money";
@@ -23,8 +27,13 @@ export default function ProductView({
   product: Product;
   related: Product[];
 }) {
-  const [variant, setVariant] = useState<ProductVariant | null>(
-    defaultVariant(product)
+  const initialVariant = defaultVariant(product);
+  const [variant, setVariant] = useState<ProductVariant | null>(initialVariant);
+  const [optionLabel, setOptionLabel] = useState(() =>
+    selectionLabel(
+      defaultAttributeSelection(initialVariant),
+      productAttributeGroups(product)
+    )
   );
   const price = variantPrice(variant);
   const mrp = variantMrp(variant);
@@ -46,7 +55,7 @@ export default function ProductView({
 
         <div>
           <span className="text-[11px] uppercase tracking-[0.16em] text-ion">
-            {[brand, category, variantLabel(variant)].filter(Boolean).join(" · ")}
+            {[brand, category, optionLabel].filter(Boolean).join(" · ")}
           </span>
           <h1 className="mt-2 text-3xl font-medium sm:text-4xl">
             {product.name}
@@ -77,6 +86,7 @@ export default function ProductView({
               product={product}
               variant={variant}
               onVariantChange={setVariant}
+              onSelectionChange={(label) => setOptionLabel(label)}
             />
           </div>
 

@@ -67,7 +67,13 @@ export interface ProductVariant {
   created_at?: string;
   updated_at?: string;
   deleted_at?: string | null;
-  attributeValues: AttributeValue[];
+  /**
+   * Grouped attribute options for this variant.
+   * One attribute may list multiple selectable values (pick exactly one per group).
+   */
+  attributes?: UsedAttribute[];
+  /** @deprecated prefer `attributes` — kept for older payloads */
+  attributeValues?: AttributeValue[];
   uploads: Upload[];
 }
 

@@ -23,7 +23,6 @@ const SOCIAL = [
 const CHANNELS: { id: OtpChannel; label: string }[] = [
   { id: "email", label: "Email" },
   { id: "sms", label: "SMS" },
-  { id: "both", label: "Email + SMS" },
 ];
 
 export default function AuthPage() {
@@ -66,14 +65,14 @@ function AuthForm() {
   const [newPassword, setNewPassword] = useState("");
   const [gender, setGender] = useState<Gender>("male");
   const [birthDate, setBirthDate] = useState("");
-  const [channel, setChannel] = useState<OtpChannel>("both");
+  const [channel, setChannel] = useState<OtpChannel>("email");
   const [otp, setOtp] = useState("");
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
   const isLogin = mode === "login";
-  const needsPhone = channel === "sms" || channel === "both";
+  const needsPhone = channel === "sms";
 
   const title = useMemo(() => {
     if (mode === "forgot") return "Восстановление";
@@ -287,7 +286,7 @@ function AuthForm() {
                     : mode === "reset"
                       ? `Введите код из письма на ${email || "email"}`
                       : step === "otp"
-                        ? `Код отправлен${channel === "sms" ? " по SMS" : channel === "both" ? " на email и SMS" : ` на ${email}`}`
+                        ? `Код отправлен${channel === "sms" ? " по SMS" : ` на ${email}`}`
                         : isLogin
                           ? "Войдите по email и паролю"
                           : "Создайте аккаунт — код придёт выбранным каналом"}

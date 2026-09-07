@@ -14,6 +14,12 @@ import {
   variantMrp,
   variantPrice,
 } from "@/lib/money";
+import {
+  defaultAttributeSelection,
+  productAttributeGroups,
+  selectionLabel,
+  selectionValueIds,
+} from "@/lib/attributes";
 import { productImage } from "@/lib/media";
 
 export default function ProductCard({
@@ -103,7 +109,15 @@ export default function ProductCard({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              add(product, variant);
+              if (!variant) return;
+              const selected = defaultAttributeSelection(variant);
+              add(
+                product,
+                variant,
+                1,
+                selectionValueIds(selected),
+                selectionLabel(selected, productAttributeGroups(product))
+              );
             }}
             aria-label={`Добавить ${product.name} в корзину`}
             className="relative z-20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-mist transition-colors hover:border-ion hover:bg-ion hover:text-ink"

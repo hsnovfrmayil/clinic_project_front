@@ -10,12 +10,20 @@ import {
 } from "react";
 import { DeliveryId, getDeliveryFee } from "./delivery";
 import type { Product, ProductVariant } from "./api/types";
+import {
+  defaultAttributeSelection,
+  selectionLabel,
+  selectionValueIds,
+  productAttributeGroups,
+} from "./attributes";
 import { defaultVariant, variantPrice } from "./money";
 
 export interface CartLine {
   product: Product;
   variant: ProductVariant;
   quantity: number;
+  attribute_value_ids: number[];
+  attribute_label?: string;
 }
 
 export interface CartToast {
@@ -23,13 +31,20 @@ export interface CartToast {
   product: Product;
   variant: ProductVariant;
   quantity: number;
+  attribute_label?: string;
 }
 
 interface CartContextValue {
   lines: CartLine[];
-  add: (product: Product, variant?: ProductVariant | null, quantity?: number) => void;
-  remove: (variantId: string) => void;
-  setQuantity: (variantId: string, quantity: number) => void;
+  add: (
+    product: Product,
+    variant?: ProductVariant | null,
+    quantity?: number,
+    attributeValueIds?: number[],
+    attributeLabel?: string
+  ) => void;
+  remove: (lineKey: string) => void;
+  setQuantity: (lineKey: string, quantity: number) => void;
   clear: () => void;
   delivery: DeliveryId;
   setDelivery: (id: DeliveryId) => void;
@@ -46,10 +61,41 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-const STORAGE_KEY = "eonage-cart-v2";
+const STORAGE_KEY = "eonage-cart-v3";
 
-function lineKey(variantId: string | number) {
-  return String(variantId);
+export function cartLineKey(
+  variantId: string | number,
+  attributeValueIds: number[] = []
+) {
+  const attrs = [...attributeValueIds].sort((a, b) => a - b).join(",");
+  return `${variantId}:${attrs}`;
+}
+
+function normalizeLine(raw: Partial<CartLine> & { product: Product; variant: ProductVariant }): CartLine {
+  const attribute_value_ids =
+    raw.attribute_value_ids?.length
+      ? raw.attribute_value_ids
+      : selectionValueIds(defaultAttributeSelection(raw.variant));
+  const attribute_label =
+    raw.attribute_label ||
+    selectionLabel(
+      Object.fromEntries(
+        (raw.variant.attributes ?? []).map((attr, i) => {
+          const id = attribute_value_ids[i];
+          return [String(attr.id), String(id ?? attr.values?.[0]?.id ?? "")];
+        })
+      ),
+      productAttributeGroups(raw.product)
+    ) ||
+    undefined;
+
+  return {
+    product: raw.product,
+    variant: raw.variant,
+    quantity: raw.quantity ?? 1,
+    attribute_value_ids,
+    attribute_label,
+  };
 }
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
@@ -63,7 +109,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setLines(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw) as CartLine[];
+        setLines(parsed.map((l) => normalizeLine(l)));
+      }
     } catch {
       // ignore corrupted storage
     }
@@ -82,38 +131,88 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [toast]);
 
   const add = useCallback(
-    (product: Product, variant?: ProductVariant | null, quantity = 1) => {
+    (
+      product: Product,
+      variant?: ProductVariant | null,
+      quantity = 1,
+      attributeValueIds?: number[],
+      attributeLabel?: string
+    ) => {
       const selected = variant ?? defaultVariant(product);
       if (!selected) return;
 
+      const attribute_value_ids =
+        attributeValueIds?.length
+          ? attributeValueIds
+          : selectionValueIds(defaultAttributeSelection(selected));
+      const attribute_label =
+        attributeLabel ||
+        selectionLabel(
+          defaultAttributeSelection(selected),
+          productAttributeGroups(product)
+        );
+
+      const key = cartLineKey(selected.id, attribute_value_ids);
+
       setLines((prev) => {
-        const key = lineKey(selected.id);
-        const existing = prev.find((l) => lineKey(l.variant.id) === key);
+        const existing = prev.find(
+          (l) => cartLineKey(l.variant.id, l.attribute_value_ids) === key
+        );
         if (existing) {
           return prev.map((l) =>
-            lineKey(l.variant.id) === key
-              ? { ...l, quantity: l.quantity + quantity, product, variant: selected }
+            cartLineKey(l.variant.id, l.attribute_value_ids) === key
+              ? {
+                  ...l,
+                  quantity: l.quantity + quantity,
+                  product,
+                  variant: selected,
+                  attribute_value_ids,
+                  attribute_label,
+                }
               : l
           );
         }
-        return [...prev, { product, variant: selected, quantity }];
+        return [
+          ...prev,
+          {
+            product,
+            variant: selected,
+            quantity,
+            attribute_value_ids,
+            attribute_label,
+          },
+        ];
       });
-      setToast({ id: Date.now(), product, variant: selected, quantity });
+      setToast({
+        id: Date.now(),
+        product,
+        variant: selected,
+        quantity,
+        attribute_label,
+      });
       setCartPulse((n) => n + 1);
     },
     []
   );
 
-  const remove = useCallback((variantId: string) => {
-    setLines((prev) => prev.filter((l) => lineKey(l.variant.id) !== variantId));
+  const remove = useCallback((lineKey: string) => {
+    setLines((prev) =>
+      prev.filter(
+        (l) => cartLineKey(l.variant.id, l.attribute_value_ids) !== lineKey
+      )
+    );
   }, []);
 
-  const setQuantity = useCallback((variantId: string, quantity: number) => {
+  const setQuantity = useCallback((lineKey: string, quantity: number) => {
     setLines((prev) =>
       quantity <= 0
-        ? prev.filter((l) => lineKey(l.variant.id) !== variantId)
+        ? prev.filter(
+            (l) => cartLineKey(l.variant.id, l.attribute_value_ids) !== lineKey
+          )
         : prev.map((l) =>
-            lineKey(l.variant.id) === variantId ? { ...l, quantity } : l
+            cartLineKey(l.variant.id, l.attribute_value_ids) === lineKey
+              ? { ...l, quantity }
+              : l
           )
     );
   }, []);

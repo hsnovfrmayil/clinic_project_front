@@ -50,11 +50,23 @@ export function defaultVariant(product: Product): ProductVariant | null {
 }
 
 export function variantLabel(variant?: ProductVariant | null) {
+  if (variant?.attributes?.length) {
+    return variant.attributes
+      .map((attr) => attr.values?.[0]?.value)
+      .filter(Boolean)
+      .join(" · ");
+  }
   if (!variant?.attributeValues?.length) return "";
   return variant.attributeValues.map((v) => v.value).join(" · ");
 }
 
+/** @deprecated Prefer explicit selected attribute_value_ids from cart/PDP */
 export function variantAttributeIds(variant?: ProductVariant | null): number[] {
+  if (variant?.attributes?.length) {
+    return variant.attributes
+      .map((attr) => Number(attr.values?.[0]?.id))
+      .filter((id) => Number.isFinite(id) && id > 0);
+  }
   return (variant?.attributeValues ?? [])
     .map((av) => Number(av.id))
     .filter((id) => Number.isFinite(id) && id > 0);

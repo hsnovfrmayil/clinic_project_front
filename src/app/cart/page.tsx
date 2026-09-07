@@ -7,8 +7,9 @@ import ProductMedia from "@/components/ProductMedia";
 import { LinkButton } from "@/components/Button";
 import { Minus, Plus, X, ArrowLeft, ShoppingBag, Truck, Store } from "lucide-react";
 import clsx from "clsx";
-import { formatMoney, productHref, variantLabel, variantPrice } from "@/lib/money";
+import { formatMoney, productHref, variantPrice } from "@/lib/money";
 import { variantImage } from "@/lib/media";
+import { cartLineKey } from "@/lib/cart-context";
 
 export default function CartPage() {
   const {
@@ -72,9 +73,11 @@ export default function CartPage() {
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_380px] lg:gap-12">
         <div className="flex flex-col gap-10">
           <ul className="flex flex-col gap-4">
-          {lines.map(({ product, variant, quantity }) => (
+          {lines.map(({ product, variant, quantity, attribute_label, attribute_value_ids }) => {
+            const key = cartLineKey(variant.id, attribute_value_ids);
+            return (
             <li
-              key={String(variant.id)}
+              key={key}
               className="group flex gap-5 rounded-2xl border border-line bg-panel p-5 transition-colors hover:border-ion/30 sm:gap-6 sm:p-6"
             >
               <Link
@@ -93,7 +96,7 @@ export default function CartPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <span className="text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                      {variantLabel(variant) || product.categories?.[0]?.name}
+                      {attribute_label || product.categories?.[0]?.name}
                     </span>
                     <Link
                       href={productHref(product)}
@@ -103,7 +106,7 @@ export default function CartPage() {
                     </Link>
                   </div>
                   <button
-                    onClick={() => remove(String(variant.id))}
+                    onClick={() => remove(key)}
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-transparent text-silver-dim transition-colors hover:border-line hover:text-ion"
                     aria-label="Удалить"
                   >
@@ -114,7 +117,7 @@ export default function CartPage() {
                 <div className="mt-auto flex items-center justify-between pt-4">
                   <div className="flex items-center gap-1 rounded-full border border-line bg-void/50 px-1.5 py-1">
                     <button
-                      onClick={() => setQuantity(String(variant.id), quantity - 1)}
+                      onClick={() => setQuantity(key, quantity - 1)}
                       className="flex h-7 w-7 items-center justify-center rounded-full text-silver transition-colors hover:bg-panel-2 hover:text-ion"
                       aria-label="Уменьшить количество"
                     >
@@ -124,7 +127,7 @@ export default function CartPage() {
                       {quantity}
                     </span>
                     <button
-                      onClick={() => setQuantity(String(variant.id), quantity + 1)}
+                      onClick={() => setQuantity(key, quantity + 1)}
                       className="flex h-7 w-7 items-center justify-center rounded-full text-silver transition-colors hover:bg-panel-2 hover:text-ion"
                       aria-label="Увеличить количество"
                     >
@@ -137,7 +140,8 @@ export default function CartPage() {
                 </div>
               </div>
             </li>
-          ))}
+            );
+          })}
           </ul>
 
           <fieldset>

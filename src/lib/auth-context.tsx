@@ -179,7 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = useCallback(
     async (payload: RegisterPayload) => {
-      const channel: OtpChannel = payload.channel ?? "both";
+      const channel: OtpChannel = payload.channel ?? "email";
       await authApi.register({ ...payload, channel });
       persist(null, {
         email: payload.email,

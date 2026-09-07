@@ -2,119 +2,107 @@
 
 import { useMemo, useState } from "react";
 import type { Product, ProductVariant } from "@/lib/api/types";
+import {
+  defaultAttributeSelection,
+  isOptionAvailable,
+  productAttributeGroups,
+  resolveSelectionAfterPick,
+  selectionLabel,
+  selectionValueIds,
+  variantStockOk,
+} from "@/lib/attributes";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "./Button";
 import { Minus, Plus } from "lucide-react";
 import clsx from "clsx";
-import { asId, toNumber } from "@/lib/money";
+import { asId } from "@/lib/money";
 
 export default function ProductActions({
   product,
   variant,
   onVariantChange,
+  onSelectionChange,
 }: {
   product: Product;
   variant: ProductVariant | null;
   onVariantChange?: (variant: ProductVariant) => void;
+  onSelectionChange?: (label: string, attributeValueIds: number[]) => void;
 }) {
   const [quantity, setQuantity] = useState(1);
   const { add } = useCart();
 
-  const groups = useMemo(() => {
-    const map = new Map<
-      string,
-      { name: string; values: { id: string; value: string }[] }
-    >();
-    for (const v of product.variants ?? []) {
-      for (const av of v.attributeValues ?? []) {
-        const attrId = asId(av.attribute_id ?? av.attribute?.id ?? av.id);
-        const name = av.attribute?.name ?? "Вариант";
-        const current = map.get(attrId) ?? { name, values: [] };
-        if (!current.values.some((x) => x.id === asId(av.id))) {
-          current.values.push({ id: asId(av.id), value: av.value });
-        }
-        map.set(attrId, current);
-      }
-    }
-    return [...map.entries()].map(([id, group]) => ({ id, ...group }));
-  }, [product.variants]);
-
-  const selectedIds = new Set(
-    (variant?.attributeValues ?? []).map((av) => asId(av.id))
+  const groups = useMemo(
+    () => productAttributeGroups(product),
+    [product]
   );
 
-  const valueIdsForAttribute = (attributeId: string) => {
-    const ids = new Set<string>();
-    for (const v of product.variants ?? []) {
-      for (const av of v.attributeValues ?? []) {
-        if (asId(av.attribute_id ?? av.attribute?.id ?? "") === attributeId) {
-          ids.add(asId(av.id));
-        }
-      }
-    }
-    return ids;
+  const [selected, setSelected] = useState<Record<string, string>>(() =>
+    defaultAttributeSelection(variant)
+  );
+
+  const applySelection = (
+    nextSelected: Record<string, string>,
+    nextVariant: ProductVariant | null
+  ) => {
+    setSelected(nextSelected);
+    if (nextVariant) onVariantChange?.(nextVariant);
+    onSelectionChange?.(
+      selectionLabel(nextSelected, groups),
+      selectionValueIds(nextSelected)
+    );
   };
 
   const pickValue = (attributeId: string, valueId: string) => {
-    const variants = product.variants ?? [];
-    const candidates = variants.filter((v) =>
-      (v.attributeValues ?? []).some((av) => asId(av.id) === valueId)
-    );
-    if (!candidates.length) return;
-
-    const attrValueIds = valueIdsForAttribute(attributeId);
-    const otherSelected = [...selectedIds].filter((id) => !attrValueIds.has(id));
-
-    const score = (v: ProductVariant) => {
-      const ids = new Set((v.attributeValues ?? []).map((av) => asId(av.id)));
-      return otherSelected.filter((id) => ids.has(id)).length;
-    };
-
-    candidates.sort((a, b) => {
-      const diff = score(b) - score(a);
-      if (diff !== 0) return diff;
-      return toNumber(b.stock) - toNumber(a.stock);
-    });
-
-    onVariantChange?.(candidates[0]);
+    const { selected: nextSelected, variant: nextVariant } =
+      resolveSelectionAfterPick(product, selected, attributeId, valueId);
+    applySelection(nextSelected, nextVariant);
   };
 
-  const inStock = toNumber(variant?.stock) > 0;
+  const inStock = variantStockOk(variant);
+  const attributeValueIds = selectionValueIds(selected);
+  const label = selectionLabel(selected, groups);
 
   return (
     <div className="flex flex-col gap-5">
-      {groups.map((group) => (
-        <div key={group.id}>
-          <p className="mb-2 text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-            {group.name}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            {group.values.map((value) => {
-              const active = selectedIds.has(value.id);
-              const available = (product.variants ?? []).some((v) =>
-                (v.attributeValues ?? []).some((av) => asId(av.id) === value.id)
-              );
-              return (
-                <button
-                  key={value.id}
-                  type="button"
-                  disabled={!available}
-                  onClick={() => pickValue(group.id, value.id)}
-                  className={clsx(
-                    "rounded-full border px-3.5 py-1.5 text-xs uppercase tracking-[0.08em] transition-colors",
-                    active
-                      ? "border-ion bg-ion/10 text-ion"
-                      : "border-line text-silver hover:border-ion hover:text-ion",
-                    !available && "cursor-not-allowed opacity-40"
-                  )}
-                >
-                  {value.value}
-                </button>
-              );
-            })}
+      {groups.map((group) => {
+        const groupId = asId(group.id);
+        return (
+          <div key={groupId}>
+            <p className="mb-2 text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+              {group.name}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {group.values.map((value) => {
+                const valueId = asId(value.id);
+                const active = selected[groupId] === valueId;
+                const available = isOptionAvailable(
+                  product,
+                  groupId,
+                  valueId,
+                  selected
+                );
+                return (
+                  <button
+                    key={valueId}
+                    type="button"
+                    disabled={!available}
+                    onClick={() => pickValue(groupId, valueId)}
+                    className={clsx(
+                      "rounded-full border px-3.5 py-1.5 text-xs uppercase tracking-[0.08em] transition-colors",
+                      active
+                        ? "border-ion bg-ion/10 text-ion"
+                        : "border-line text-silver hover:border-ion hover:text-ion",
+                      !available && "cursor-not-allowed opacity-40"
+                    )}
+                  >
+                    {value.value}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-3 rounded-full border border-line px-3 py-2.5">
@@ -136,7 +124,10 @@ export default function ProductActions({
         </div>
         <Button
           disabled={!variant || !inStock}
-          onClick={() => variant && add(product, variant, quantity)}
+          onClick={() =>
+            variant &&
+            add(product, variant, quantity, attributeValueIds, label)
+          }
           className="flex-1 sm:flex-none"
         >
           {inStock ? "Добавить в корзину" : "Нет в наличии"}

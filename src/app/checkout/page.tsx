@@ -9,14 +9,9 @@ import { CheckCircle2 } from "lucide-react";
 import clsx from "clsx";
 import { createOrder } from "@/lib/api/catalog";
 import { toErrorMessage } from "@/lib/api/client";
-import {
-  formatMoney,
-  toNumber,
-  variantAttributeIds,
-  variantLabel,
-  variantPrice,
-} from "@/lib/money";
+import { formatMoney, toNumber, variantPrice } from "@/lib/money";
 import { variantImage } from "@/lib/media";
+import { cartLineKey } from "@/lib/cart-context";
 
 const PAYMENT_OPTIONS = [
   { id: "card", label: "Картой онлайн" },
@@ -119,7 +114,7 @@ export default function CheckoutPage() {
                 items: lines.map((l) => ({
                   product_variant_id: Number(l.variant.id),
                   quantity: l.quantity,
-                  attribute_value_ids: variantAttributeIds(l.variant),
+                  attribute_value_ids: l.attribute_value_ids ?? [],
                 })),
               },
               token
@@ -185,8 +180,11 @@ export default function CheckoutPage() {
             Ваш заказ
           </h2>
           <ul className="mt-5 flex flex-col gap-4">
-            {lines.map(({ product, variant, quantity }) => (
-              <li key={String(variant.id)} className="flex items-center gap-3">
+            {lines.map(({ product, variant, quantity, attribute_label, attribute_value_ids }) => (
+              <li
+                key={cartLineKey(variant.id, attribute_value_ids)}
+                className="flex items-center gap-3"
+              >
                 <div className="h-14 w-12 shrink-0 overflow-hidden rounded-lg bg-panel-2">
                   <ProductMedia
                     src={variantImage(variant)}
@@ -198,7 +196,7 @@ export default function CheckoutPage() {
                 <div className="flex-1 text-sm">
                   <p className="leading-snug">{product.name}</p>
                   <span className="text-xs text-silver-dim">
-                    {variantLabel(variant)} × {quantity}
+                    {attribute_label || "Вариант"} × {quantity}
                   </span>
                 </div>
                 <span className="text-sm font-medium">
