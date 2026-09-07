@@ -24,4 +24,5 @@ export const MEDIA_URL = (
 ).replace(/\/$/, "");
 
 export const AUTH_TOKEN_KEY = "eonage-token";
+export const AUTH_REFRESH_KEY = "eonage-refresh-token";
 export const AUTH_USER_KEY = "eonage-user";

@@ -14,9 +14,11 @@ function CallbackInner() {
       params.get("access_token") ||
       params.get("token") ||
       params.get("jwt");
+    const refresh =
+      params.get("refresh_token") || params.get("refreshToken");
 
     if (token) {
-      setSession(token, { email: params.get("email") || "" });
+      setSession(token, { email: params.get("email") || "" }, refresh);
       router.replace("/");
       return;
     }

@@ -21,7 +21,10 @@ export default function ProductActions({
   const { add } = useCart();
 
   const groups = useMemo(() => {
-    const map = new Map<string, { name: string; values: { id: string; value: string }[] }>();
+    const map = new Map<
+      string,
+      { name: string; values: { id: string; value: string }[] }
+    >();
     for (const v of product.variants ?? []) {
       for (const av of v.attributeValues ?? []) {
         const attrId = asId(av.attribute_id ?? av.attribute?.id ?? av.id);
@@ -40,20 +43,40 @@ export default function ProductActions({
     (variant?.attributeValues ?? []).map((av) => asId(av.id))
   );
 
+  const valueIdsForAttribute = (attributeId: string) => {
+    const ids = new Set<string>();
+    for (const v of product.variants ?? []) {
+      for (const av of v.attributeValues ?? []) {
+        if (asId(av.attribute_id ?? av.attribute?.id ?? "") === attributeId) {
+          ids.add(asId(av.id));
+        }
+      }
+    }
+    return ids;
+  };
+
   const pickValue = (attributeId: string, valueId: string) => {
-    const next = product.variants.find((v) => {
+    const variants = product.variants ?? [];
+    const candidates = variants.filter((v) =>
+      (v.attributeValues ?? []).some((av) => asId(av.id) === valueId)
+    );
+    if (!candidates.length) return;
+
+    const attrValueIds = valueIdsForAttribute(attributeId);
+    const otherSelected = [...selectedIds].filter((id) => !attrValueIds.has(id));
+
+    const score = (v: ProductVariant) => {
       const ids = new Set((v.attributeValues ?? []).map((av) => asId(av.id)));
-      const required = [...selectedIds];
-      const attrValueIds = new Set(
-        (product.variants ?? [])
-          .flatMap((x) => x.attributeValues ?? [])
-          .filter((av) => asId(av.attribute_id ?? av.attribute?.id ?? "") === attributeId)
-          .map((av) => asId(av.id))
-      );
-      const withoutAttr = required.filter((id) => !attrValueIds.has(id));
-      return [...withoutAttr, valueId].every((id) => ids.has(id));
+      return otherSelected.filter((id) => ids.has(id)).length;
+    };
+
+    candidates.sort((a, b) => {
+      const diff = score(b) - score(a);
+      if (diff !== 0) return diff;
+      return toNumber(b.stock) - toNumber(a.stock);
     });
-    if (next) onVariantChange?.(next);
+
+    onVariantChange?.(candidates[0]);
   };
 
   const inStock = toNumber(variant?.stock) > 0;
@@ -68,16 +91,21 @@ export default function ProductActions({
           <div className="flex flex-wrap gap-2">
             {group.values.map((value) => {
               const active = selectedIds.has(value.id);
+              const available = (product.variants ?? []).some((v) =>
+                (v.attributeValues ?? []).some((av) => asId(av.id) === value.id)
+              );
               return (
                 <button
                   key={value.id}
                   type="button"
+                  disabled={!available}
                   onClick={() => pickValue(group.id, value.id)}
                   className={clsx(
                     "rounded-full border px-3.5 py-1.5 text-xs uppercase tracking-[0.08em] transition-colors",
                     active
                       ? "border-ion bg-ion/10 text-ion"
-                      : "border-line text-silver hover:border-ion hover:text-ion"
+                      : "border-line text-silver hover:border-ion hover:text-ion",
+                    !available && "cursor-not-allowed opacity-40"
                   )}
                 >
                   {value.value}

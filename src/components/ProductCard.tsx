@@ -57,6 +57,13 @@ export default function ProductCard({
       onMouseLeave={handleLeave}
       className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-panel transition-[transform,border-color] duration-200 ease-out will-change-transform hover:border-ion/40"
     >
+      <Link
+        href={href}
+        onClick={onNavigate}
+        className="absolute inset-0 z-10"
+        aria-label={product.name}
+      />
+
       <div
         className="pointer-events-none absolute inset-0 z-20 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
@@ -65,28 +72,22 @@ export default function ProductCard({
         }}
       />
 
-      <Link
-        href={href}
-        onClick={onNavigate}
-        className="relative flex h-64 items-center justify-center overflow-hidden bg-panel-2"
-      >
+      <div className="relative flex h-64 items-center justify-center overflow-hidden bg-panel-2">
         <ProductMedia
           src={productImage(product)}
           alt={product.name}
           className="h-full w-full p-6"
           bottleClassName="h-48 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-1"
         />
-      </Link>
+      </div>
 
-      <div className="flex flex-1 flex-col gap-3 p-5">
+      <div className="relative flex flex-1 flex-col gap-3 p-5">
         <div className="text-[11px] uppercase tracking-[0.14em] text-silver-dim">
           {[brand, category, variantLabel(variant)].filter(Boolean).join(" · ")}
         </div>
-        <Link href={href} onClick={onNavigate}>
-          <h3 className="font-medium leading-snug transition-colors hover:text-ion">
-            {product.name}
-          </h3>
-        </Link>
+        <h3 className="font-medium leading-snug transition-colors group-hover:text-ion">
+          {product.name}
+        </h3>
         {product.description && (
           <p className="line-clamp-2 text-sm text-silver">{product.description}</p>
         )}
@@ -98,9 +99,14 @@ export default function ProductCard({
             size="sm"
           />
           <button
-            onClick={() => add(product, variant)}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              add(product, variant);
+            }}
             aria-label={`Добавить ${product.name} в корзину`}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-mist transition-colors hover:border-ion hover:bg-ion hover:text-ink"
+            className="relative z-20 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-line text-mist transition-colors hover:border-ion hover:bg-ion hover:text-ink"
           >
             <Plus size={16} />
           </button>

@@ -15,6 +15,9 @@ export interface Discount {
   discount_percentage: number | string;
   start_date: string;
   end_date: string;
+  created_at?: string;
+  updated_at?: string;
+  deleted_at?: string | null;
 }
 
 export interface Brand {
@@ -54,7 +57,12 @@ export interface ProductVariant {
   product_id: Id;
   stock: number;
   mrp: number | string;
+  /** Final price after active discounts */
   price: number | string;
+  /** Price before discount (API ProductVariantWithDiscountDto) */
+  original_price?: number | string;
+  discount_percentage?: number | string;
+  /** @deprecated legacy alias — prefer price / original_price */
   discounted_price?: number | string | null;
   created_at?: string;
   updated_at?: string;
@@ -74,6 +82,7 @@ export interface Product {
   variants: ProductVariant[];
   categories: Category[];
   brands: Brand[];
+  /** Backend typo kept as-is */
   bonus_persentages?: string | number | null;
 }
 
@@ -128,14 +137,17 @@ export interface Slider {
   upload?: Upload | null;
 }
 
+export type OtpChannel = "email" | "sms" | "both";
+
 export interface RegisterPayload {
   first_name: string;
   last_name: string;
-  phone: string;
+  phone?: string;
   email: string;
   password: string;
   gender?: "male" | "female";
   birth_date?: string;
+  channel?: OtpChannel;
 }
 
 export interface LoginPayload {
@@ -144,8 +156,24 @@ export interface LoginPayload {
 }
 
 export interface VerifyOtpPayload {
+  email?: string;
+  phone?: string;
+  otp: string;
+}
+
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ResetPasswordPayload {
   email: string;
   otp: string;
+  new_password: string;
+}
+
+export interface AuthTokens {
+  access_token: string;
+  refresh_token?: string;
 }
 
 export interface AuthUser {
@@ -165,12 +193,21 @@ export interface AuthUser {
 export interface CreateOrderItem {
   product_variant_id: number;
   quantity: number;
+  /** Required by API — empty array if product has no attributes */
+  attribute_value_ids: number[];
 }
 
 export interface CreateOrderPayload {
   idempotency_key: string;
   bonus?: boolean;
   items: CreateOrderItem[];
+}
+
+export interface OrderItemAttributeValue {
+  order_item_id: Id;
+  attribute_value_id: Id;
+  created_at?: string;
+  attributeValue?: AttributeValue;
 }
 
 export interface OrderItem {
@@ -181,9 +218,10 @@ export interface OrderItem {
   price_per_item: number | string;
   vat_rate: number;
   vat_amount: number | string;
-  allocated_bonus: number;
+  allocated_bonus: number | string;
   final_price: number | string;
   productVariant?: ProductVariant;
+  attributeValues?: OrderItemAttributeValue[];
 }
 
 export interface Order {
@@ -196,6 +234,7 @@ export interface Order {
   total_vat_amount: number | string;
   bonus_amount_used: number | string;
   final_amount: number | string;
+  bonus_amount_earned?: number | string;
   created_at: string;
   updated_at: string;
   items: OrderItem[];
@@ -213,4 +252,9 @@ export interface ProductQuery {
   in_stock?: boolean;
   sortBy?: "id" | "name" | "created_at";
   order?: "ASC" | "DESC";
+}
+
+export interface OrdersQuery {
+  page?: number;
+  limit?: number;
 }

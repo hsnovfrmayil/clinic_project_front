@@ -9,6 +9,7 @@ import { Truck, ShieldCheck } from "lucide-react";
 import type { Product, ProductVariant } from "@/lib/api/types";
 import {
   defaultVariant,
+  toNumber,
   variantLabel,
   variantMrp,
   variantPrice,
@@ -62,6 +63,12 @@ export default function ProductView({
           {product.description && (
             <p className="mt-6 max-w-lg leading-relaxed text-silver">
               {product.description}
+            </p>
+          )}
+
+          {toNumber(product.bonus_persentages) > 0 && (
+            <p className="mt-4 text-sm text-ion">
+              +{toNumber(product.bonus_persentages)}% бонусов за покупку
             </p>
           )}
 

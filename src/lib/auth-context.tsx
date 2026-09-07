@@ -8,9 +8,15 @@ import {
   useMemo,
   useState,
 } from "react";
-import { AUTH_TOKEN_KEY, AUTH_USER_KEY } from "./api/config";
+import { AUTH_USER_KEY } from "./api/config";
 import * as authApi from "./api/auth";
-import type { AuthUser, LoginPayload, RegisterPayload } from "./api/types";
+import type {
+  AuthUser,
+  LoginPayload,
+  OtpChannel,
+  RegisterPayload,
+  VerifyOtpPayload,
+} from "./api/types";
 
 interface AuthContextValue {
   token: string | null;
@@ -19,13 +25,32 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
-  verifyOtp: (email: string, otp: string) => Promise<void>;
+  verifyOtp: (payload: VerifyOtpPayload) => Promise<void>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (
+    email: string,
+    otp: string,
+    newPassword: string
+  ) => Promise<string>;
   refreshUser: () => Promise<AuthUser | null>;
-  setSession: (token: string, user?: AuthUser | null) => void;
-  logout: () => void;
+  setSession: (
+    token: string,
+    user?: AuthUser | null,
+    refreshToken?: string | null
+  ) => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+
+function persistUser(nextUser: AuthUser | null) {
+  try {
+    if (nextUser) localStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser));
+    else localStorage.removeItem(AUTH_USER_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(null);
@@ -33,18 +58,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   const persist = useCallback(
-    (nextToken: string | null, nextUser: AuthUser | null) => {
+    (
+      nextToken: string | null,
+      nextUser: AuthUser | null,
+      refreshToken?: string | null
+    ) => {
       setToken(nextToken);
       setUser(nextUser);
-      try {
-        if (nextToken) localStorage.setItem(AUTH_TOKEN_KEY, nextToken);
-        else localStorage.removeItem(AUTH_TOKEN_KEY);
-        if (nextUser)
-          localStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser));
-        else localStorage.removeItem(AUTH_USER_KEY);
-      } catch {
-        // ignore
-      }
+      authApi.writeStoredTokens(nextToken, refreshToken);
+      persistUser(nextUser);
     },
     []
   );
@@ -53,15 +75,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (overrideToken?: string | null) => {
       const active = overrideToken ?? token;
       if (!active) {
-        persist(null, null);
+        persist(null, null, null);
         return null;
       }
       try {
         const profile = await authApi.fetchMe(active);
-        persist(active, profile);
+        const { refresh_token } = authApi.readStoredTokens();
+        persist(active, profile, refresh_token);
         return profile;
       } catch {
-        persist(null, null);
+        persist(null, null, null);
         return null;
       }
     },
@@ -72,7 +95,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+        const { access_token: savedToken, refresh_token } =
+          authApi.readStoredTokens();
         const raw = localStorage.getItem(AUTH_USER_KEY);
         const cached = raw ? (JSON.parse(raw) as AuthUser) : null;
 
@@ -92,12 +116,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
           const profile = await authApi.fetchMe(savedToken);
-          if (!cancelled) persist(savedToken, profile);
+          if (!cancelled) persist(savedToken, profile, refresh_token);
         } catch {
-          if (!cancelled) persist(null, null);
+          if (refresh_token) {
+            try {
+              const tokens = await authApi.refreshTokens(refresh_token);
+              const profile = await authApi.fetchMe(tokens.access_token);
+              if (!cancelled) {
+                persist(
+                  tokens.access_token,
+                  profile,
+                  tokens.refresh_token ?? refresh_token
+                );
+              }
+              return;
+            } catch {
+              // fall through
+            }
+          }
+          if (!cancelled) persist(null, null, null);
         }
       } catch {
-        if (!cancelled) persist(null, null);
+        if (!cancelled) persist(null, null, null);
       } finally {
         if (!cancelled) setHydrated(true);
       }
@@ -108,11 +148,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [persist]);
 
   const setSession = useCallback(
-    (nextToken: string, nextUser?: AuthUser | null) => {
-      persist(nextToken, nextUser ?? user);
+    (
+      nextToken: string,
+      nextUser?: AuthUser | null,
+      refreshToken?: string | null
+    ) => {
+      const existing = authApi.readStoredTokens().refresh_token;
+      persist(nextToken, nextUser ?? user, refreshToken ?? existing);
       void authApi
         .fetchMe(nextToken)
-        .then((profile) => persist(nextToken, profile))
+        .then((profile) =>
+          persist(nextToken, profile, refreshToken ?? existing)
+        )
         .catch(() => {
           /* keep token; profile optional until next refresh */
         });
@@ -122,19 +169,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = useCallback(
     async (payload: LoginPayload) => {
-      const { access_token } = await authApi.login(payload);
-      persist(access_token, {
-        email: payload.email,
-      });
-      const profile = await authApi.fetchMe(access_token);
-      persist(access_token, profile);
+      const tokens = await authApi.login(payload);
+      persist(tokens.access_token, { email: payload.email }, tokens.refresh_token ?? null);
+      const profile = await authApi.fetchMe(tokens.access_token);
+      persist(tokens.access_token, profile, tokens.refresh_token ?? null);
     },
     [persist]
   );
 
   const register = useCallback(
     async (payload: RegisterPayload) => {
-      await authApi.register(payload);
+      const channel: OtpChannel = payload.channel ?? "both";
+      await authApi.register({ ...payload, channel });
       persist(null, {
         email: payload.email,
         first_name: payload.first_name,
@@ -142,16 +188,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         phone: payload.phone,
         gender: payload.gender ?? null,
         birth_date: payload.birth_date ?? null,
-      });
+      }, null);
     },
     [persist]
   );
 
-  const verifyOtp = useCallback(async (email: string, otp: string) => {
-    await authApi.verifyOtp({ email, otp });
+  const verifyOtp = useCallback(async (payload: VerifyOtpPayload) => {
+    await authApi.verifyOtp(payload);
   }, []);
 
-  const logout = useCallback(() => persist(null, null), [persist]);
+  const forgotPassword = useCallback(async (email: string) => {
+    const res = await authApi.forgotPassword({ email });
+    return (
+      res?.message ||
+      "Если email зарегистрирован, код подтверждения отправлен"
+    );
+  }, []);
+
+  const resetPassword = useCallback(
+    async (email: string, otp: string, newPassword: string) => {
+      const res = await authApi.resetPassword({
+        email,
+        otp,
+        new_password: newPassword,
+      });
+      return res?.message || "Пароль успешно обновлён";
+    },
+    []
+  );
+
+  const logout = useCallback(async () => {
+    const { refresh_token } = authApi.readStoredTokens();
+    if (refresh_token) {
+      try {
+        await authApi.logoutRemote(refresh_token);
+      } catch {
+        // still clear local session
+      }
+    }
+    persist(null, null, null);
+  }, [persist]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -162,6 +238,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       verifyOtp,
+      forgotPassword,
+      resetPassword,
       refreshUser: () => refreshUser(),
       setSession,
       logout,
@@ -173,6 +251,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login,
       register,
       verifyOtp,
+      forgotPassword,
+      resetPassword,
       refreshUser,
       setSession,
       logout,

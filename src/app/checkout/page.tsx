@@ -9,7 +9,13 @@ import { CheckCircle2 } from "lucide-react";
 import clsx from "clsx";
 import { createOrder } from "@/lib/api/catalog";
 import { toErrorMessage } from "@/lib/api/client";
-import { formatMoney, toNumber, variantLabel, variantPrice } from "@/lib/money";
+import {
+  formatMoney,
+  toNumber,
+  variantAttributeIds,
+  variantLabel,
+  variantPrice,
+} from "@/lib/money";
 import { variantImage } from "@/lib/media";
 
 const PAYMENT_OPTIONS = [
@@ -27,7 +33,9 @@ export default function CheckoutPage() {
   const [confirmedOrder, setConfirmedOrder] = useState<{
     number: string;
     bonusUsed: number;
+    bonusEarned: number;
     finalAmount: number;
+    orderId: string;
   } | null>(null);
 
   if (confirmedOrder) {
@@ -45,12 +53,22 @@ export default function CheckoutPage() {
             Списано бонусов: {confirmedOrder.bonusUsed}
           </p>
         )}
+        {confirmedOrder.bonusEarned > 0 && (
+          <p className="mt-2 text-sm text-ion">
+            Начислено бонусов: {confirmedOrder.bonusEarned}
+          </p>
+        )}
         <p className="mt-2 text-sm text-silver">
           Итого: {formatMoney(confirmedOrder.finalAmount)}
         </p>
-        <LinkButton href="/catalog" className="mt-9">
-          Вернуться в каталог
-        </LinkButton>
+        <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
+          <LinkButton href={`/orders/${confirmedOrder.orderId}`}>
+            Открыть заказ
+          </LinkButton>
+          <LinkButton href="/catalog" variant="outline">
+            В каталог
+          </LinkButton>
+        </div>
       </div>
     );
   }
@@ -101,6 +119,7 @@ export default function CheckoutPage() {
                 items: lines.map((l) => ({
                   product_variant_id: Number(l.variant.id),
                   quantity: l.quantity,
+                  attribute_value_ids: variantAttributeIds(l.variant),
                 })),
               },
               token
@@ -108,7 +127,9 @@ export default function CheckoutPage() {
             setConfirmedOrder({
               number: order.order_number,
               bonusUsed: toNumber(order.bonus_amount_used),
+              bonusEarned: toNumber(order.bonus_amount_earned),
               finalAmount: toNumber(order.final_amount),
+              orderId: String(order.id),
             });
             clear();
           } catch (err) {

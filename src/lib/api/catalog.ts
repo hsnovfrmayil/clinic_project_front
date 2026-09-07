@@ -4,6 +4,7 @@ import type {
   Category,
   CreateOrderPayload,
   Order,
+  OrdersQuery,
   Paginated,
   Product,
   ProductFilters,
@@ -69,10 +70,24 @@ export async function fetchSliders() {
   return apiFetch<Slider[]>("/sliders", { auth: false });
 }
 
-export async function createOrder(payload: CreateOrderPayload, token: string) {
+export async function createOrder(payload: CreateOrderPayload, token?: string) {
   return apiFetch<Order>("/orders", {
     method: "POST",
     body: JSON.stringify(payload),
     token,
   });
+}
+
+export async function fetchOrders(query: OrdersQuery = {}, token?: string) {
+  return apiFetch<Paginated<Order>>(
+    `/orders${toQuery({
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+    })}`,
+    { token }
+  );
+}
+
+export async function fetchOrder(id: string | number, token?: string) {
+  return apiFetch<Order>(`/orders/${id}`, { token });
 }

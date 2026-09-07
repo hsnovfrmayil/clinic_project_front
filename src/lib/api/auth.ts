@@ -1,23 +1,23 @@
 import { API_ORIGIN } from "./config";
 import { apiFetch } from "./client";
+import { pickTokens } from "./tokens";
 import type {
+  AuthTokens,
   AuthUser,
+  ForgotPasswordPayload,
   LoginPayload,
   RegisterPayload,
+  ResetPasswordPayload,
   VerifyOtpPayload,
 } from "./types";
 
-export interface LoginResponse {
-  access_token: string;
-}
-
-function pickToken(payload: unknown): string {
-  if (!payload || typeof payload !== "object") return "";
-  const rec = payload as Record<string, unknown>;
-  const token =
-    rec.access_token ?? rec.accessToken ?? rec.token ?? rec.jwt;
-  return typeof token === "string" ? token : "";
-}
+export { pickTokens } from "./tokens";
+export { refreshTokens } from "./refresh";
+export {
+  clearStoredTokens,
+  readStoredTokens,
+  writeStoredTokens,
+} from "./session";
 
 export async function register(payload: RegisterPayload) {
   return apiFetch<unknown>("/auth/register", {
@@ -35,8 +35,8 @@ export async function verifyOtp(payload: VerifyOtpPayload) {
   });
 }
 
-export async function login(payload: LoginPayload) {
-  const data = await apiFetch<LoginResponse | Record<string, unknown>>(
+export async function login(payload: LoginPayload): Promise<AuthTokens> {
+  const data = await apiFetch<AuthTokens | Record<string, unknown>>(
     "/auth/login",
     {
       method: "POST",
@@ -44,11 +44,35 @@ export async function login(payload: LoginPayload) {
       auth: false,
     }
   );
-  const access_token = pickToken(data);
-  if (!access_token) {
+  const tokens = pickTokens(data);
+  if (!tokens.access_token) {
     throw new Error("Токен не получен");
   }
-  return { access_token };
+  return tokens;
+}
+
+export async function logoutRemote(refresh_token: string) {
+  return apiFetch<{ message?: string }>("/auth/logout", {
+    method: "POST",
+    body: JSON.stringify({ refresh_token }),
+    auth: false,
+  });
+}
+
+export async function forgotPassword(payload: ForgotPasswordPayload) {
+  return apiFetch<{ message?: string }>("/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    auth: false,
+  });
+}
+
+export async function resetPassword(payload: ResetPasswordPayload) {
+  return apiFetch<{ message?: string }>("/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(payload),
+    auth: false,
+  });
 }
 
 /** GET /users/me — cari istifadəçi profili (balance daxil) */

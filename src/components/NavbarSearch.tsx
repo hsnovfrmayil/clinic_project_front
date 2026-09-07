@@ -15,16 +15,18 @@ function SearchProductRow({
   products: Product[];
   onClose: () => void;
 }) {
+  // Close after navigation starts — closing in the same click unmounts the Link
+  // and intermittently aborts the route change.
+  const handleNavigate = () => {
+    window.setTimeout(onClose, 0);
+  };
+
   return (
     <div className="no-scrollbar -mx-6 flex items-start gap-3 overflow-x-auto overflow-y-visible px-6 lg:-mx-10 lg:px-10">
       {products.map((product) => (
-        <div
-          key={String(product.id)}
-          className="w-[196px] shrink-0"
-          onClick={onClose}
-        >
+        <div key={String(product.id)} className="w-[196px] shrink-0">
           <div className="w-[280px] origin-top-left scale-[0.7] -mb-36">
-            <ProductCard product={product} />
+            <ProductCard product={product} onNavigate={handleNavigate} />
           </div>
         </div>
       ))}

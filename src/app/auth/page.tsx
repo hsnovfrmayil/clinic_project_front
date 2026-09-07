@@ -9,14 +9,21 @@ import { Button } from "@/components/Button";
 import { useAuth } from "@/lib/auth-context";
 import { oauthStartUrl } from "@/lib/api/auth";
 import { toErrorMessage } from "@/lib/api/client";
+import type { OtpChannel } from "@/lib/api/types";
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "forgot" | "reset";
 type Step = "form" | "otp";
 type Gender = "male" | "female";
 
 const SOCIAL = [
   { id: "yandex" as const, label: "Яндекс", bg: "#FC3F1D", mark: "Я" },
   { id: "vk" as const, label: "VK", bg: "#0077FF", mark: "VK" },
+];
+
+const CHANNELS: { id: OtpChannel; label: string }[] = [
+  { id: "email", label: "Email" },
+  { id: "sms", label: "SMS" },
+  { id: "both", label: "Email + SMS" },
 ];
 
 export default function AuthPage() {
@@ -37,7 +44,17 @@ function AuthForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const next = searchParams.get("next") || "/";
-  const { login, register, verifyOtp, isAuthenticated, user, logout, hydrated } = useAuth();
+  const {
+    login,
+    register,
+    verifyOtp,
+    forgotPassword,
+    resetPassword,
+    isAuthenticated,
+    user,
+    logout,
+    hydrated,
+  } = useAuth();
 
   const [mode, setMode] = useState<Mode>("login");
   const [step, setStep] = useState<Step>("form");
@@ -46,32 +63,82 @@ function AuthForm() {
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
   const [gender, setGender] = useState<Gender>("male");
   const [birthDate, setBirthDate] = useState("");
+  const [channel, setChannel] = useState<OtpChannel>("both");
   const [otp, setOtp] = useState("");
+  const [info, setInfo] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
   const isLogin = mode === "login";
+  const needsPhone = channel === "sms" || channel === "both";
 
   const title = useMemo(() => {
+    if (mode === "forgot") return "Восстановление";
+    if (mode === "reset") return "Новый пароль";
     if (step === "otp") return "Подтверждение";
     return isLogin ? "Вход" : "Регистрация";
-  }, [isLogin, step]);
+  }, [isLogin, mode, step]);
 
   const goHome = () => router.push(next);
+
+  const switchMode = (nextMode: Mode) => {
+    setMode(nextMode);
+    setStep("form");
+    setError("");
+    setInfo("");
+    setOtp("");
+    setNewPassword("");
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setInfo("");
     setPending(true);
     try {
+      if (mode === "forgot") {
+        if (!email.trim()) {
+          setError("Укажите email");
+          return;
+        }
+        const message = await forgotPassword(email.trim());
+        setInfo(message);
+        setMode("reset");
+        return;
+      }
+
+      if (mode === "reset") {
+        if (!email.trim() || otp.trim().length !== 6 || newPassword.trim().length < 6) {
+          setError("Заполните email, 6-значный код и новый пароль (от 6 символов)");
+          return;
+        }
+        const message = await resetPassword(
+          email.trim(),
+          otp.trim(),
+          newPassword
+        );
+        setInfo(message);
+        setPassword(newPassword);
+        setMode("login");
+        setStep("form");
+        setOtp("");
+        setNewPassword("");
+        return;
+      }
+
       if (step === "otp") {
         if (otp.trim().length !== 6) {
           setError("Введите 6-значный код");
           return;
         }
-        await verifyOtp(email.trim(), otp.trim());
+        await verifyOtp({
+          email: email.trim() || undefined,
+          phone: phone.trim() || undefined,
+          otp: otp.trim(),
+        });
         await login({ email: email.trim(), password });
         goHome();
         return;
@@ -92,8 +159,12 @@ function AuthForm() {
         return;
       }
 
-      if (!firstName.trim() || !lastName.trim() || !phone.trim()) {
-        setError("Укажите имя, фамилию и телефон");
+      if (!firstName.trim() || !lastName.trim()) {
+        setError("Укажите имя и фамилию");
+        return;
+      }
+      if (needsPhone && !phone.trim()) {
+        setError("Укажите телефон для SMS-кода");
         return;
       }
       if (!birthDate) {
@@ -104,11 +175,12 @@ function AuthForm() {
       await register({
         first_name: firstName.trim(),
         last_name: lastName.trim(),
-        phone: phone.trim(),
+        phone: phone.trim() || undefined,
         email: email.trim(),
         password,
         gender,
         birth_date: birthDate,
+        channel,
       });
       setStep("otp");
     } catch (err) {
@@ -188,11 +260,17 @@ function AuthForm() {
                     {Number(user?.balance ?? 0)}
                   </p>
                 </div>
+                <Link
+                  href="/orders"
+                  className="mt-6 inline-flex text-sm text-mist underline-offset-4 hover:text-ion hover:underline"
+                >
+                  Мои заказы
+                </Link>
                 <Button
                   type="button"
                   className="mt-8 w-full"
                   onClick={() => {
-                    logout();
+                    void logout();
                   }}
                 >
                   Выйти
@@ -200,238 +278,349 @@ function AuthForm() {
               </>
             ) : (
               <>
-            <h2 className="mt-3 text-3xl font-medium tracking-tight sm:text-4xl">
-              {title}
-            </h2>
-            <p className="mt-3 text-sm leading-relaxed text-silver">
-              {step === "otp"
-                ? `Код отправлен на ${email}`
-                : isLogin
-                  ? "Войдите по email и паролю"
-                  : "Создайте аккаунт — код придёт на email"}
-            </p>
-
-            {step === "form" && (
-              <div className="mt-8 flex items-center gap-6 border-b border-line">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("login");
-                    setError("");
-                  }}
-                  className={clsx(
-                    "relative pb-3 text-[12px] font-semibold uppercase tracking-[0.1em] transition-colors",
-                    isLogin ? "text-mist" : "text-silver-dim hover:text-silver"
-                  )}
-                >
-                  Вход
-                  {isLogin && (
-                    <span className="absolute inset-x-0 -bottom-px h-px bg-mist" />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode("register");
-                    setError("");
-                  }}
-                  className={clsx(
-                    "relative pb-3 text-[12px] font-semibold uppercase tracking-[0.1em] transition-colors",
-                    !isLogin ? "text-mist" : "text-silver-dim hover:text-silver"
-                  )}
-                >
-                  Регистрация
-                  {!isLogin && (
-                    <span className="absolute inset-x-0 -bottom-px h-px bg-mist" />
-                  )}
-                </button>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-              {step === "otp" ? (
-                <label className="block">
-                  <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                    Код из письма
-                  </span>
-                  <input
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                    placeholder="482910"
-                    className="input tracking-[0.3em]"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                  />
-                </label>
-              ) : (
-                <>
-                  {mode === "register" && (
-                    <>
-                      <div className="grid grid-cols-2 gap-3">
-                        <label className="block">
-                          <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                            Имя
-                          </span>
-                          <input
-                            value={firstName}
-                            onChange={(e) => setFirstName(e.target.value)}
-                            className="input"
-                            autoComplete="given-name"
-                          />
-                        </label>
-                        <label className="block">
-                          <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                            Фамилия
-                          </span>
-                          <input
-                            value={lastName}
-                            onChange={(e) => setLastName(e.target.value)}
-                            className="input"
-                            autoComplete="family-name"
-                          />
-                        </label>
-                      </div>
-                      <label className="block">
-                        <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                          Телефон
-                        </span>
-                        <input
-                          type="tel"
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+994501234567"
-                          className="input"
-                          autoComplete="tel"
-                        />
-                      </label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <label className="block">
-                          <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                            Пол
-                          </span>
-                          <select
-                            value={gender}
-                            onChange={(e) => setGender(e.target.value as Gender)}
-                            className="input"
-                          >
-                            <option value="male">Мужской</option>
-                            <option value="female">Женский</option>
-                          </select>
-                        </label>
-                        <label className="block">
-                          <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                            Дата рождения
-                          </span>
-                          <input
-                            type="date"
-                            value={birthDate}
-                            onChange={(e) => setBirthDate(e.target.value)}
-                            className="input"
-                            autoComplete="bday"
-                          />
-                        </label>
-                      </div>
-                    </>
-                  )}
-
-                  <label className="block">
-                    <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                      Email
-                    </span>
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="name@email.com"
-                      className="input"
-                      autoComplete="email"
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                      Пароль
-                    </span>
-                    <input
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••"
-                      className="input"
-                      autoComplete={isLogin ? "current-password" : "new-password"}
-                    />
-                  </label>
-                </>
-              )}
-
-              {error && <p className="text-sm text-gold">{error}</p>}
-
-              <Button type="submit" className="w-full" disabled={pending}>
-                {pending
-                  ? "Подождите…"
-                  : step === "otp"
-                    ? "Подтвердить"
-                    : isLogin
-                      ? "Войти"
-                      : "Создать аккаунт"}
-              </Button>
-            </form>
-
-            {step === "form" && (
-              <>
-                <p className="mt-6 text-sm text-silver">
-                  {isLogin ? (
-                    <>
-                      Нет аккаунта?{" "}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMode("register");
-                          setError("");
-                        }}
-                        className="text-mist underline-offset-4 transition-colors hover:text-ion hover:underline"
-                      >
-                        Зарегистрироваться
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      Уже есть аккаунт?{" "}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setMode("login");
-                          setError("");
-                        }}
-                        className="text-mist underline-offset-4 transition-colors hover:text-ion hover:underline"
-                      >
-                        Войти
-                      </button>
-                    </>
-                  )}
+                <h2 className="mt-3 text-3xl font-medium tracking-tight sm:text-4xl">
+                  {title}
+                </h2>
+                <p className="mt-3 text-sm leading-relaxed text-silver">
+                  {mode === "forgot"
+                    ? "Укажите email — пришлём код для сброса пароля"
+                    : mode === "reset"
+                      ? `Введите код из письма на ${email || "email"}`
+                      : step === "otp"
+                        ? `Код отправлен${channel === "sms" ? " по SMS" : channel === "both" ? " на email и SMS" : ` на ${email}`}`
+                        : isLogin
+                          ? "Войдите по email и паролю"
+                          : "Создайте аккаунт — код придёт выбранным каналом"}
                 </p>
 
-                <div className="mt-10">
-                  <p className="mb-4 text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                    Быстрый вход
-                  </p>
-                  <div className="flex items-center gap-3">
-                    {SOCIAL.map((item) => (
-                      <a
-                        key={item.id}
-                        href={oauthStartUrl(item.id)}
-                        aria-label={`Войти через ${item.label}`}
-                        title={item.label}
-                        className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white transition-transform hover:scale-105"
-                        style={{ backgroundColor: item.bg }}
-                      >
-                        {item.mark}
-                      </a>
-                    ))}
+                {step === "form" && (mode === "login" || mode === "register") && (
+                  <div className="mt-8 flex items-center gap-6 border-b border-line">
+                    <button
+                      type="button"
+                      onClick={() => switchMode("login")}
+                      className={clsx(
+                        "relative pb-3 text-[12px] font-semibold uppercase tracking-[0.1em] transition-colors",
+                        isLogin ? "text-mist" : "text-silver-dim hover:text-silver"
+                      )}
+                    >
+                      Вход
+                      {isLogin && (
+                        <span className="absolute inset-x-0 -bottom-px h-px bg-mist" />
+                      )}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => switchMode("register")}
+                      className={clsx(
+                        "relative pb-3 text-[12px] font-semibold uppercase tracking-[0.1em] transition-colors",
+                        !isLogin ? "text-mist" : "text-silver-dim hover:text-silver"
+                      )}
+                    >
+                      Регистрация
+                      {!isLogin && (
+                        <span className="absolute inset-x-0 -bottom-px h-px bg-mist" />
+                      )}
+                    </button>
                   </div>
-                </div>
-              </>
-            )}
+                )}
+
+                <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                  {mode === "forgot" && (
+                    <label className="block">
+                      <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                        Email
+                      </span>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="name@email.com"
+                        className="input"
+                        autoComplete="email"
+                      />
+                    </label>
+                  )}
+
+                  {mode === "reset" && (
+                    <>
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                          Email
+                        </span>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          className="input"
+                          autoComplete="email"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                          Код из письма
+                        </span>
+                        <input
+                          value={otp}
+                          onChange={(e) =>
+                            setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                          }
+                          placeholder="482910"
+                          className="input tracking-[0.3em]"
+                          inputMode="numeric"
+                          autoComplete="one-time-code"
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                          Новый пароль
+                        </span>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="input"
+                          autoComplete="new-password"
+                        />
+                      </label>
+                    </>
+                  )}
+
+                  {mode !== "forgot" && mode !== "reset" && step === "otp" && (
+                    <label className="block">
+                      <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                        Код подтверждения
+                      </span>
+                      <input
+                        value={otp}
+                        onChange={(e) =>
+                          setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))
+                        }
+                        placeholder="482910"
+                        className="input tracking-[0.3em]"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                      />
+                    </label>
+                  )}
+
+                  {mode !== "forgot" && mode !== "reset" && step === "form" && (
+                    <>
+                      {mode === "register" && (
+                        <>
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className="block">
+                              <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                                Имя
+                              </span>
+                              <input
+                                value={firstName}
+                                onChange={(e) => setFirstName(e.target.value)}
+                                className="input"
+                                autoComplete="given-name"
+                              />
+                            </label>
+                            <label className="block">
+                              <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                                Фамилия
+                              </span>
+                              <input
+                                value={lastName}
+                                onChange={(e) => setLastName(e.target.value)}
+                                className="input"
+                                autoComplete="family-name"
+                              />
+                            </label>
+                          </div>
+                          <label className="block">
+                            <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                              Телефон{needsPhone ? "" : " (необязательно)"}
+                            </span>
+                            <input
+                              type="tel"
+                              value={phone}
+                              onChange={(e) => setPhone(e.target.value)}
+                              placeholder="+994501234567"
+                              className="input"
+                              autoComplete="tel"
+                            />
+                          </label>
+                          <div className="grid grid-cols-2 gap-3">
+                            <label className="block">
+                              <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                                Пол
+                              </span>
+                              <select
+                                value={gender}
+                                onChange={(e) =>
+                                  setGender(e.target.value as Gender)
+                                }
+                                className="input"
+                              >
+                                <option value="male">Мужской</option>
+                                <option value="female">Женский</option>
+                              </select>
+                            </label>
+                            <label className="block">
+                              <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                                Дата рождения
+                              </span>
+                              <input
+                                type="date"
+                                value={birthDate}
+                                onChange={(e) => setBirthDate(e.target.value)}
+                                className="input"
+                                autoComplete="bday"
+                              />
+                            </label>
+                          </div>
+                          <fieldset>
+                            <legend className="mb-2 text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                              Канал OTP
+                            </legend>
+                            <div className="flex flex-wrap gap-2">
+                              {CHANNELS.map((item) => (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => setChannel(item.id)}
+                                  className={clsx(
+                                    "rounded-full border px-3 py-1.5 text-xs uppercase tracking-[0.08em] transition-colors",
+                                    channel === item.id
+                                      ? "border-ion bg-ion/10 text-ion"
+                                      : "border-line text-silver hover:border-ion"
+                                  )}
+                                >
+                                  {item.label}
+                                </button>
+                              ))}
+                            </div>
+                          </fieldset>
+                        </>
+                      )}
+
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                          Email
+                        </span>
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="name@email.com"
+                          className="input"
+                          autoComplete="email"
+                        />
+                      </label>
+
+                      <label className="block">
+                        <span className="mb-2 block text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                          Пароль
+                        </span>
+                        <input
+                          type="password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••"
+                          className="input"
+                          autoComplete={
+                            isLogin ? "current-password" : "new-password"
+                          }
+                        />
+                      </label>
+                    </>
+                  )}
+
+                  {info && <p className="text-sm text-ion">{info}</p>}
+                  {error && <p className="text-sm text-gold">{error}</p>}
+
+                  <Button type="submit" className="w-full" disabled={pending}>
+                    {pending
+                      ? "Подождите…"
+                      : mode === "forgot"
+                        ? "Отправить код"
+                        : mode === "reset"
+                          ? "Сохранить пароль"
+                          : step === "otp"
+                            ? "Подтвердить"
+                            : isLogin
+                              ? "Войти"
+                              : "Создать аккаунт"}
+                  </Button>
+                </form>
+
+                {step === "form" && (
+                  <>
+                    {mode === "login" && (
+                      <button
+                        type="button"
+                        onClick={() => switchMode("forgot")}
+                        className="mt-4 text-sm text-silver underline-offset-4 hover:text-ion hover:underline"
+                      >
+                        Забыли пароль?
+                      </button>
+                    )}
+
+                    {(mode === "forgot" || mode === "reset") && (
+                      <button
+                        type="button"
+                        onClick={() => switchMode("login")}
+                        className="mt-4 text-sm text-silver underline-offset-4 hover:text-ion hover:underline"
+                      >
+                        Вернуться ко входу
+                      </button>
+                    )}
+
+                    {(mode === "login" || mode === "register") && (
+                      <>
+                        <p className="mt-6 text-sm text-silver">
+                          {isLogin ? (
+                            <>
+                              Нет аккаунта?{" "}
+                              <button
+                                type="button"
+                                onClick={() => switchMode("register")}
+                                className="text-mist underline-offset-4 transition-colors hover:text-ion hover:underline"
+                              >
+                                Зарегистрироваться
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              Уже есть аккаунт?{" "}
+                              <button
+                                type="button"
+                                onClick={() => switchMode("login")}
+                                className="text-mist underline-offset-4 transition-colors hover:text-ion hover:underline"
+                              >
+                                Войти
+                              </button>
+                            </>
+                          )}
+                        </p>
+
+                        <div className="mt-10">
+                          <p className="mb-4 text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+                            Быстрый вход
+                          </p>
+                          <div className="flex items-center gap-3">
+                            {SOCIAL.map((item) => (
+                              <a
+                                key={item.id}
+                                href={oauthStartUrl(item.id)}
+                                aria-label={`Войти через ${item.label}`}
+                                title={item.label}
+                                className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white transition-transform hover:scale-105"
+                                style={{ backgroundColor: item.bg }}
+                              >
+                                {item.mark}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
               </>
             )}
           </div>
