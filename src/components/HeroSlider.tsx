@@ -170,6 +170,86 @@ export default function HeroSlider({
   const fallback = SLIDES[active] ?? SLIDES[0];
   const apiSlide = apiSlides[active];
   const BadgeIcon = BADGE_ICONS[fallback.badgeIcon];
+  const apiImage = useApi && apiSlide?.image ? apiSlide.image : null;
+
+  if (apiImage && apiSlide) {
+    const href = apiSlide.link_url || undefined;
+    return (
+      <section
+        className="relative h-[calc(100dvh-4.5rem)] w-full overflow-hidden border-b border-line"
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={apiSlide.id}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute inset-0"
+          >
+            {href ? (
+              <a href={href} className="absolute inset-0 block">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={apiImage}
+                  alt=""
+                  className="h-full w-full object-cover object-center"
+                />
+              </a>
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={apiImage}
+                alt=""
+                className="h-full w-full object-cover object-center"
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+
+        {count > 1 && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex items-center justify-between px-6 sm:px-8 lg:px-12">
+            <div className="pointer-events-auto flex items-center gap-2">
+              {Array.from({ length: count }, (_, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => goTo(i)}
+                  aria-label={`Слайд ${i + 1}`}
+                  className={clsx(
+                    "h-1.5 rounded-full transition-all duration-300",
+                    i === active
+                      ? "w-6 bg-white"
+                      : "w-1.5 bg-white/40 hover:bg-white/70"
+                  )}
+                />
+              ))}
+            </div>
+            <div className="pointer-events-auto flex items-center gap-2">
+              <button
+                type="button"
+                onClick={prev}
+                aria-label="Предыдущий слайд"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur-sm transition-colors hover:border-white/60"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <button
+                type="button"
+                onClick={next}
+                aria-label="Следующий слайд"
+                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur-sm transition-colors hover:border-white/60"
+              >
+                <ChevronRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
+    );
+  }
 
   return (
     <section
@@ -186,88 +266,53 @@ export default function HeroSlider({
       />
       <div className="grain absolute inset-0" />
 
-      <div className="relative mx-auto flex w-full max-w-7xl flex-1 flex-col px-6 py-8 lg:px-10 lg:py-10">
+      <div className="relative z-10 flex w-full flex-1 flex-col px-6 py-8 sm:px-8 lg:px-12 lg:py-10 xl:px-16">
         <div className="relative flex flex-1 items-center">
           <AnimatePresence mode="wait">
-            {useApi && apiSlide ? (
-              <motion.div
-                key={apiSlide.id}
-                initial={{ opacity: 0, x: 28 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -28 }}
-                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                className="flex w-full flex-col items-center gap-10 lg:flex-row lg:gap-16"
-              >
-                <div className="flex-1 text-center lg:text-left">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-silver">
-                    EONAGE
-                  </span>
-                  <h1 className="mt-6 font-display text-5xl leading-[1.02] tracking-tight sm:text-6xl lg:text-[5.5rem]">
-                    {apiSlide.title}
-                  </h1>
-                  <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">
-                    <LinkButton href={apiSlide.link_url || "/catalog"}>
-                      Смотреть
-                    </LinkButton>
-                  </div>
+            <motion.div
+              key={fallback.id}
+              initial={{ opacity: 0, x: 28 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -28 }}
+              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
+              className="flex w-full flex-col-reverse items-center gap-10 lg:flex-row lg:gap-16"
+            >
+              <div className="flex-1 text-center lg:text-left">
+                <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-silver">
+                  <BadgeIcon size={12} className="text-ion" />
+                  {fallback.badge}
+                </span>
+                <h1 className="mt-6 font-display text-5xl leading-[1.02] tracking-tight sm:text-6xl lg:text-[5.5rem]">
+                  {fallback.titleLine1}
+                  {fallback.titleLine2 && (
+                    <>
+                      <br />
+                      {fallback.titleLine2}{" "}
+                    </>
+                  )}
+                  {fallback.titleAccent && (
+                    <span className="glitch italic text-ion">
+                      {fallback.titleAccent}
+                    </span>
+                  )}
+                </h1>
+                <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-silver lg:mx-0">
+                  {fallback.description}
+                </p>
+                <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">
+                  <LinkButton href={fallback.primaryCta.href}>
+                    {fallback.primaryCta.label}
+                  </LinkButton>
+                  <LinkButton
+                    href={fallback.secondaryCta.href}
+                    variant="outline"
+                  >
+                    {fallback.secondaryCta.label}
+                  </LinkButton>
                 </div>
-                {apiSlide.image && (
-                  <div className="relative h-72 w-full max-w-md overflow-hidden rounded-[2rem] bg-panel-2 sm:h-96">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={apiSlide.image}
-                      alt={apiSlide.title}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                )}
-              </motion.div>
-            ) : (
-              <motion.div
-                key={fallback.id}
-                initial={{ opacity: 0, x: 28 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -28 }}
-                transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                className="flex w-full flex-col-reverse items-center gap-10 lg:flex-row lg:gap-16"
-              >
-                <div className="flex-1 text-center lg:text-left">
-                  <span className="inline-flex items-center gap-2 rounded-full border border-line px-3 py-1.5 text-[11px] uppercase tracking-[0.16em] text-silver">
-                    <BadgeIcon size={12} className="text-ion" />
-                    {fallback.badge}
-                  </span>
-                  <h1 className="mt-6 font-display text-5xl leading-[1.02] tracking-tight sm:text-6xl lg:text-[5.5rem]">
-                    {fallback.titleLine1}
-                    {fallback.titleLine2 && (
-                      <>
-                        <br />
-                        {fallback.titleLine2}{" "}
-                      </>
-                    )}
-                    {fallback.titleAccent && (
-                      <span className="glitch italic text-ion">
-                        {fallback.titleAccent}
-                      </span>
-                    )}
-                  </h1>
-                  <p className="mx-auto mt-6 max-w-md text-base leading-relaxed text-silver lg:mx-0">
-                    {fallback.description}
-                  </p>
-                  <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center lg:justify-start">
-                    <LinkButton href={fallback.primaryCta.href}>
-                      {fallback.primaryCta.label}
-                    </LinkButton>
-                    <LinkButton
-                      href={fallback.secondaryCta.href}
-                      variant="outline"
-                    >
-                      {fallback.secondaryCta.label}
-                    </LinkButton>
-                  </div>
-                </div>
-                <SlideVisualBlock visual={fallback.visual} />
-              </motion.div>
-            )}
+              </div>
+              <SlideVisualBlock visual={fallback.visual} />
+            </motion.div>
           </AnimatePresence>
         </div>
 
