@@ -25,7 +25,7 @@ export default function CartToast() {
           aria-live="polite"
         >
           <div className="flex items-center gap-3 rounded-2xl border border-line bg-panel p-3.5 shadow-[0_16px_48px_rgba(0,0,0,0.14)] backdrop-blur-md">
-            <div className="flex h-14 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-panel-2">
+            <div className="relative aspect-[3/4] w-12 shrink-0 overflow-hidden rounded-xl bg-white">
               <ProductMedia
                 src={variantImage(toast.variant)}
                 alt={toast.product.name}

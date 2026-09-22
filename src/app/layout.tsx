@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import CursorFX from "@/components/CursorFX";
 import SiteIntro from "@/components/SiteIntro";
 import CartToast from "@/components/CartToast";
+import OAuthCallbackBridge from "@/components/OAuthCallbackBridge";
 
 const manrope = Manrope({
   variable: "--font-manrope",
@@ -63,6 +64,7 @@ export default function RootLayout({
               "try{if(localStorage.getItem('eonage-theme')==='dark'){document.documentElement.setAttribute('data-theme','dark')}}catch(e){}",
           }}
         />
+        <OAuthCallbackBridge />
         <SiteIntro />
         <CursorFX />
         <div className="app-shell flex min-h-full flex-1 flex-col">

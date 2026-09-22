@@ -43,17 +43,17 @@ export default function ProductView({
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-14 lg:px-10">
-      <div className="grid grid-cols-1 gap-14 lg:grid-cols-2">
-        <div className="relative flex h-[420px] items-center justify-center overflow-hidden rounded-3xl border border-line bg-panel">
+      <div className="flex flex-col items-center gap-10 lg:flex-row lg:items-start lg:gap-12 xl:gap-16">
+        <div className="relative aspect-[3/4] w-full max-w-[280px] shrink-0 overflow-hidden rounded-2xl border border-line bg-white sm:max-w-[300px]">
           <ProductMedia
             src={image}
             alt={product.name}
-            className="h-full w-full p-10"
-            bottleClassName="h-72"
+            className="h-full w-full"
+            bottleClassName="h-44 sm:h-52"
           />
         </div>
 
-        <div>
+        <div className="w-full min-w-0 flex-1 lg:max-w-xl lg:pt-2">
           <span className="text-[11px] uppercase tracking-[0.16em] text-ion">
             {[brand, category, optionLabel].filter(Boolean).join(" · ")}
           </span>

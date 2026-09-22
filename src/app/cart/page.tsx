@@ -82,13 +82,13 @@ export default function CartPage() {
             >
               <Link
                 href={productHref(product)}
-                className="flex h-28 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-panel-2 transition-colors group-hover:bg-panel-2/80 sm:h-32 sm:w-28"
+                className="relative aspect-[3/4] w-20 shrink-0 overflow-hidden rounded-xl bg-white sm:w-24"
               >
                 <ProductMedia
                   src={variantImage(variant)}
                   alt={product.name}
-                  className="h-full w-full p-2"
-                  bottleClassName="h-24 sm:h-28"
+                  className="h-full w-full"
+                  bottleClassName="h-20 sm:h-24"
                 />
               </Link>
 

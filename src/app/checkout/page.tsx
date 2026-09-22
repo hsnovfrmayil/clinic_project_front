@@ -185,7 +185,7 @@ export default function CheckoutPage() {
                 key={cartLineKey(variant.id, attribute_value_ids)}
                 className="flex items-center gap-3"
               >
-                <div className="h-14 w-12 shrink-0 overflow-hidden rounded-lg bg-panel-2">
+                <div className="relative aspect-[3/4] w-12 shrink-0 overflow-hidden rounded-lg bg-white">
                   <ProductMedia
                     src={variantImage(variant)}
                     alt={product.name}

@@ -8,6 +8,7 @@ import clsx from "clsx";
 import { Button } from "@/components/Button";
 import { useAuth } from "@/lib/auth-context";
 import { oauthStartUrl } from "@/lib/api/auth";
+import { ensureOauthWorker } from "@/lib/oauth-worker";
 import { toErrorMessage } from "@/lib/api/client";
 import type { OtpChannel } from "@/lib/api/types";
 
@@ -68,7 +69,11 @@ function AuthForm() {
   const [channel, setChannel] = useState<OtpChannel>("email");
   const [otp, setOtp] = useState("");
   const [info, setInfo] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(() =>
+    searchParams.get("oauth") === "failed"
+      ? "Не удалось завершить вход. Попробуйте ещё раз."
+      : ""
+  );
   const [pending, setPending] = useState(false);
 
   const isLogin = mode === "login";
@@ -82,6 +87,11 @@ function AuthForm() {
   }, [isLogin, mode, step]);
 
   const goHome = () => router.push(next);
+
+  const startOauth = async (provider: "vk" | "yandex") => {
+    await ensureOauthWorker();
+    window.location.assign(oauthStartUrl(provider));
+  };
 
   const switchMode = (nextMode: Mode) => {
     setMode(nextMode);
@@ -603,16 +613,17 @@ function AuthForm() {
                           </p>
                           <div className="flex items-center gap-3">
                             {SOCIAL.map((item) => (
-                              <a
+                              <button
                                 key={item.id}
-                                href={oauthStartUrl(item.id)}
+                                type="button"
+                                onClick={() => void startOauth(item.id)}
                                 aria-label={`Войти через ${item.label}`}
                                 title={item.label}
                                 className="flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold text-white transition-transform hover:scale-105"
                                 style={{ backgroundColor: item.bg }}
                               >
                                 {item.mark}
-                              </a>
+                              </button>
                             ))}
                           </div>
                         </div>

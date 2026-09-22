@@ -176,7 +176,7 @@ export default function HeroSlider({
     const href = apiSlide.link_url || undefined;
     return (
       <section
-        className="relative h-[calc(100dvh-4.5rem)] w-full overflow-hidden border-b border-line"
+        className="relative w-full aspect-[1024/438] overflow-hidden border-b border-line bg-[#e8e6e3]"
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
       >
@@ -210,7 +210,7 @@ export default function HeroSlider({
         </AnimatePresence>
 
         {count > 1 && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-6 z-10 flex items-center justify-between px-6 sm:px-8 lg:px-12">
+          <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 flex items-center justify-between px-4 sm:bottom-6 sm:px-8 lg:px-12">
             <div className="pointer-events-auto flex items-center gap-2">
               {Array.from({ length: count }, (_, i) => (
                 <button
@@ -232,7 +232,7 @@ export default function HeroSlider({
                 type="button"
                 onClick={prev}
                 aria-label="Предыдущий слайд"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur-sm transition-colors hover:border-white/60"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/25 text-white backdrop-blur-sm transition-colors hover:border-white/60 sm:h-10 sm:w-10"
               >
                 <ChevronLeft size={18} />
               </button>
@@ -240,7 +240,7 @@ export default function HeroSlider({
                 type="button"
                 onClick={next}
                 aria-label="Следующий слайд"
-                className="flex h-10 w-10 items-center justify-center rounded-full border border-white/30 bg-black/30 text-white backdrop-blur-sm transition-colors hover:border-white/60"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/30 bg-black/25 text-white backdrop-blur-sm transition-colors hover:border-white/60 sm:h-10 sm:w-10"
               >
                 <ChevronRight size={18} />
               </button>

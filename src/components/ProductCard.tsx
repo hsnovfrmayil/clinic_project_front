@@ -78,11 +78,11 @@ export default function ProductCard({
         }}
       />
 
-      <div className="relative flex h-64 items-center justify-center overflow-hidden bg-panel-2">
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-white">
         <ProductMedia
           src={productImage(product)}
           alt={product.name}
-          className="h-full w-full p-6"
+          className="h-full w-full"
           bottleClassName="h-48 transition-transform duration-500 group-hover:scale-105 group-hover:-translate-y-1"
         />
       </div>
