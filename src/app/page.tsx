@@ -2,7 +2,6 @@ import { LinkButton } from "@/components/Button";
 import ProductCard from "@/components/ProductCard";
 import ProductBottle from "@/components/ProductBottle";
 import Reveal from "@/components/Reveal";
-import Counter from "@/components/Counter";
 import DiagonalMarquee from "@/components/DiagonalMarquee";
 import HeroSlider from "@/components/HeroSlider";
 import { fetchProducts, fetchSliders } from "@/lib/api/catalog";
@@ -12,13 +11,6 @@ import { ScanFace, FlaskConical, ShieldCheck } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 const MARQUEE_ITEMS = ["SCIENCE", "BEAUTY", "TECHNOLOGY"];
-
-const STATS = [
-  { value: 4.9, decimals: 1, suffix: "", label: "средняя оценка" },
-  { value: 1200, decimals: 0, suffix: "+", label: "пациентов клиники" },
-  { value: 7, decimals: 0, suffix: "", label: "патентованных формул" },
-  { value: 83, decimals: 0, suffix: "%", label: "точность AI-анализа" },
-];
 
 export default async function Home() {
   const [productRes, sliders] = await Promise.all([
@@ -107,21 +99,6 @@ export default async function Home() {
         </div>
       </section>
 
-      <section id="clinic" className="border-t border-line bg-panel">
-        <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-6 py-16 text-center lg:grid-cols-4 lg:px-10">
-          {STATS.map((stat, i) => (
-            <Reveal key={stat.label} delay={i * 0.08}>
-              <div className="font-display text-3xl text-ion sm:text-4xl">
-                <Counter value={stat.value} decimals={stat.decimals} suffix={stat.suffix} />
-              </div>
-              <div className="mt-2 text-xs uppercase tracking-[0.1em] text-silver-dim">
-                {stat.label}
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
       {/* NEW ARRIVALS */}
       {newArrivals.length > 0 && (
         <section className="mx-auto max-w-7xl px-6 py-20 lg:px-10">
@@ -129,9 +106,6 @@ export default async function Home() {
             <span className="text-[11px] uppercase tracking-[0.16em] text-ion">
               Новинки
             </span>
-            <h2 className="mt-2 text-2xl font-medium sm:text-3xl">
-              Только что со стенда лаборатории
-            </h2>
           </Reveal>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {newArrivals.map((product, i) => (
