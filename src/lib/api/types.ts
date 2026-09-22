@@ -256,7 +256,7 @@ export interface ProductQuery {
   min_price?: number;
   max_price?: number;
   in_stock?: boolean;
-  sortBy?: "id" | "name" | "created_at";
+  sortBy?: "id" | "name" | "created_at" | "price" | "popular";
   order?: "ASC" | "DESC";
 }
 

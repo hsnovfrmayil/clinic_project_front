@@ -14,7 +14,7 @@ export default function DiagonalMarquee({
   return (
     <div
       className={clsx(
-        "relative z-10 -rotate-1 border-y",
+        "relative z-10 border-y",
         tone === "light"
           ? "bg-foreground text-background border-foreground"
           : "bg-ion text-ink border-ion",

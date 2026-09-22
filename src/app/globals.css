@@ -163,17 +163,6 @@ html.intro-ready .app-shell {
   scrollbar-width: none;
 }
 
-@media (pointer: fine) {
-  * {
-    cursor: none;
-  }
-  input,
-  textarea,
-  select {
-    cursor: auto;
-  }
-}
-
 .scan-grid {
   background-image: linear-gradient(rgba(176, 190, 204, 0.16) 1px, transparent 1px),
     linear-gradient(90deg, rgba(176, 190, 204, 0.16) 1px, transparent 1px);

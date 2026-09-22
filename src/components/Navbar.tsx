@@ -23,11 +23,11 @@ const LINKS = [
 const BOOKING_OPTIONS = [
   {
     label: "Наличие акне",
-    href: "https://t.me/eonage_acne",
+    href: "https://t.me/eonagebysabisoy",
   },
   {
     label: "Подбор уход",
-    href: "https://t.me/eonage_care",
+    href: "https://t.me/eonagebysabisoy",
   },
 ] as const;
 

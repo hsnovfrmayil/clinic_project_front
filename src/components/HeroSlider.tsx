@@ -52,7 +52,7 @@ const SLIDES: HeroSlide[] = [
     description:
       "Собственная линия ухода клиники EONAGE — та же формула науки, что и в наших процедурах, теперь в домашнем протоколе.",
     primaryCta: { label: "В каталог", href: "/catalog" },
-    secondaryCta: { label: "AI Skin Analysis", href: "/#technology" },
+    secondaryCta: { label: "Бестселлеры", href: "/catalog" },
     visual: {
       variant: "dropper",
       tint: "ion",
@@ -89,7 +89,7 @@ const SLIDES: HeroSlide[] = [
     titleAccent: "кожи",
     description:
       "Сканирование, подбор протокола и рекомендации продуктов — на основе данных AI-анализа кожи в клинике EONAGE.",
-    primaryCta: { label: "Узнать больше", href: "/#technology" },
+    primaryCta: { label: "В каталог", href: "/catalog" },
     secondaryCta: { label: "В каталог", href: "/catalog" },
     visual: {
       variant: "pump",

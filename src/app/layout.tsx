@@ -6,7 +6,6 @@ import { CartProvider } from "@/lib/cart-context";
 import { AuthProvider } from "@/lib/auth-context";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import CursorFX from "@/components/CursorFX";
 import SiteIntro from "@/components/SiteIntro";
 import CartToast from "@/components/CartToast";
 import OAuthCallbackBridge from "@/components/OAuthCallbackBridge";
@@ -66,7 +65,6 @@ export default function RootLayout({
         />
         <OAuthCallbackBridge />
         <SiteIntro />
-        <CursorFX />
         <div className="app-shell flex min-h-full flex-1 flex-col">
           <CartProvider>
             <AuthProvider>

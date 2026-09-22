@@ -4,7 +4,6 @@ import ProductBottle from "@/components/ProductBottle";
 import Reveal from "@/components/Reveal";
 import Counter from "@/components/Counter";
 import DiagonalMarquee from "@/components/DiagonalMarquee";
-import ScanCompare from "@/components/ScanCompare";
 import HeroSlider from "@/components/HeroSlider";
 import { fetchProducts, fetchSliders } from "@/lib/api/catalog";
 import { mediaUrl } from "@/lib/media";
@@ -13,7 +12,6 @@ import { ScanFace, FlaskConical, ShieldCheck } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 const MARQUEE_ITEMS = ["SCIENCE", "BEAUTY", "TECHNOLOGY"];
-const MARQUEE_ITEMS_2 = ["EONAGE GAMES", "ЖЁСТКАЯ ПРАВДА", "AI SKIN ANALYSIS"];
 
 const STATS = [
   { value: 4.9, decimals: 1, suffix: "", label: "средняя оценка" },
@@ -54,9 +52,6 @@ export default async function Home() {
             <span className="text-[11px] uppercase tracking-[0.16em] text-ion">
               Бестселлеры
             </span>
-            <h2 className="mt-2 text-2xl font-medium sm:text-3xl">
-              Протокол, которому доверяют
-            </h2>
           </div>
           <LinkButton href="/catalog" variant="outline">
             Весь каталог
@@ -65,50 +60,12 @@ export default async function Home() {
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
             {bestsellers.map((product, i) => (
             <Reveal key={String(product.id)} delay={i * 0.08}>
-              <ProductCard product={product} />
+              <ProductCard product={product} layered />
             </Reveal>
           ))}
         </div>
       </section>
 
-      {/* EDITORIAL / HARD TRUTH */}
-      <section className="border-y border-line bg-panel">
-        <Reveal className="mx-auto max-w-5xl px-6 py-24 text-center lg:px-10">
-          <span className="text-[11px] uppercase tracking-[0.16em] text-gold">
-            Жёсткая правда
-          </span>
-          <p className="mt-6 font-display text-2xl italic leading-snug text-mist sm:text-3xl lg:text-4xl">
-            «Мы не обещаем чудо за одну ночь. Мы показываем измеримый
-            результат — на данных, а не на фильтрах»
-          </p>
-          <span className="mt-6 block text-sm text-silver-dim">
-            Dr. Sabisoy — врач-косметолог, основатель EONAGE
-          </span>
-        </Reveal>
-      </section>
-
-      {/* AI SCAN COMPARE */}
-      <section className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
-        <Reveal className="mb-10 text-center">
-          <span className="text-[11px] uppercase tracking-[0.16em] text-ion">
-            AI Skin Analysis
-          </span>
-          <h2 className="mt-2 text-2xl font-medium sm:text-3xl">
-            Потяните за границу — сравните скан
-          </h2>
-          <p className="mx-auto mt-3 max-w-md text-silver">
-            Так меняются показатели кожи после курса домашнего протокола
-            EONAGE, по данным AI-анализа пациентов клиники.
-          </p>
-        </Reveal>
-        <Reveal delay={0.1}>
-          <ScanCompare />
-        </Reveal>
-      </section>
-
-      <DiagonalMarquee items={MARQUEE_ITEMS_2} tone="ion" />
-
-      {/* TECHNOLOGY */}
       <section id="technology" className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
         <div className="grid grid-cols-1 items-center gap-14 lg:grid-cols-2">
           <Reveal className="order-2 flex justify-center lg:order-1" y={32}>
@@ -150,7 +107,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* STATS */}
       <section id="clinic" className="border-t border-line bg-panel">
         <div className="mx-auto grid max-w-7xl grid-cols-2 gap-8 px-6 py-16 text-center lg:grid-cols-4 lg:px-10">
           {STATS.map((stat, i) => (
@@ -202,7 +158,7 @@ export default async function Home() {
               Бонусная программа EONAGE
             </span>
             <h2 className="mx-auto mt-3 max-w-lg text-2xl font-medium sm:text-3xl">
-              До 10% с каждой покупки возвращается бонусами
+              До 5% с каждой покупки возвращается бонусами
             </h2>
             <p className="mx-auto mt-4 max-w-md text-silver">
               Бонусы копятся автоматически и списываются как скидка — на

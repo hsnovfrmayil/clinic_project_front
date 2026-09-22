@@ -38,12 +38,34 @@ function parseFilters(params: URLSearchParams): FilterState {
   };
 }
 
-function toQuery(filters: FilterState, page = 1) {
+type SortId = "price_asc" | "price_desc" | "popular";
+
+const SORTS: {
+  id: SortId;
+  label: string;
+  sortBy: "price" | "popular";
+  order: "ASC" | "DESC";
+}[] = [
+  { id: "price_asc", label: "Сначала дешевле", sortBy: "price", order: "ASC" },
+  { id: "price_desc", label: "Сначала дороже", sortBy: "price", order: "DESC" },
+  { id: "popular", label: "Популярные", sortBy: "popular", order: "DESC" },
+];
+
+function parseSort(params: URLSearchParams): SortId {
+  const value = params.get("sort");
+  if (value === "price_asc" || value === "price_desc" || value === "popular") {
+    return value;
+  }
+  return "popular";
+}
+
+function toQuery(filters: FilterState, page = 1, sort: SortId = "popular") {
   const parts: string[] = [];
   if (filters.categoryIds.length) parts.push(`category=${filters.categoryIds.join(",")}`);
   if (filters.brandIds.length) parts.push(`brand=${filters.brandIds.join(",")}`);
   if (filters.attributeValueIds.length) parts.push(`av=${filters.attributeValueIds.join(",")}`);
   if (filters.inStock) parts.push("in_stock=1");
+  if (sort !== "popular") parts.push(`sort=${sort}`);
   if (page > 1) parts.push(`page=${page}`);
   return parts.join("&");
 }
@@ -231,6 +253,8 @@ export default function CatalogView() {
   const [error, setError] = useState("");
 
   const page = Number(searchParams.get("page") || "1") || 1;
+  const sort = useMemo(() => parseSort(searchParams), [searchParams]);
+  const sortOption = SORTS.find((item) => item.id === sort) ?? SORTS[2];
   const filters = useMemo(
     () => parseFilters(searchParams),
     [searchParams]
@@ -253,8 +277,8 @@ export default function CatalogView() {
       brand_id: filters.brandIds,
       attribute_value_ids: filters.attributeValueIds,
       in_stock: filters.inStock || undefined,
-      sortBy: "id",
-      order: "DESC",
+      sortBy: sortOption.sortBy,
+      order: sortOption.order,
     })
       .then((res) => {
         if (cancelled) return;
@@ -273,10 +297,15 @@ export default function CatalogView() {
     return () => {
       cancelled = true;
     };
-  }, [filters, page]);
+  }, [filters, page, sortOption]);
 
   const applyFilters = (next: FilterState, nextPage = 1) => {
-    const qs = toQuery(next, nextPage);
+    const qs = toQuery(next, nextPage, sort);
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+
+  const applySort = (nextSort: SortId) => {
+    const qs = toQuery(filters, 1, nextSort);
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   };
 
@@ -307,6 +336,23 @@ export default function CatalogView() {
             <span className="font-medium text-mist">{total}</span>
           </p>
 
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="sr-only" htmlFor="catalog-sort">
+              Сортировка
+            </label>
+            <select
+              id="catalog-sort"
+              value={sort}
+              onChange={(e) => applySort(e.target.value as SortId)}
+              className="rounded-xl border border-line bg-panel px-3 py-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-mist"
+            >
+              {SORTS.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+
           <button
             type="button"
             onClick={() => setMobileOpen(true)}
@@ -323,6 +369,7 @@ export default function CatalogView() {
               </span>
             )}
           </button>
+          </div>
         </div>
 
         {error ? (

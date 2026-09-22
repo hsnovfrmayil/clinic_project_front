@@ -34,7 +34,9 @@ export default function Footer() {
                 <InstagramIcon size={16} />
               </a>
               <a
-                href="#"
+                href="https://t.me/eonagebysabisoy"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="flex h-10 w-10 items-center justify-center rounded-full border border-line text-silver transition-colors hover:border-ion hover:text-ion"
                 aria-label="Telegram"
               >
@@ -43,7 +45,7 @@ export default function Footer() {
             </div>
           </div>
 
-          <div>
+          <div className="md:col-start-4">
             <h4 className="text-[11px] uppercase tracking-[0.14em] text-silver-dim">
               Магазин
             </h4>
@@ -54,22 +56,10 @@ export default function Footer() {
               <li><Link href="/catalog?category=Домашние+устройства" className="hover:text-ion">Устройства</Link></li>
             </ul>
           </div>
-
-          <div>
-            <h4 className="text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-              Клиника
-            </h4>
-            <ul className="mt-4 flex flex-col gap-3 text-sm text-silver">
-              <li><Link href="/#clinic" className="hover:text-ion">О клинике</Link></li>
-              <li><Link href="/#technology" className="hover:text-ion">AI Skin Analysis</Link></li>
-              <li><a href="#" className="hover:text-ion">Москва, клиника Eonage</a></li>
-            </ul>
-          </div>
         </div>
 
         <div className="mt-14 flex flex-col items-start justify-between gap-4 border-t border-line pt-6 text-xs text-silver-dim md:flex-row md:items-center">
           <span>© {new Date().getFullYear()} EONAGE. Все права защищены.</span>
-          <span>Clinic from the future — Moscow</span>
         </div>
       </div>
     </footer>

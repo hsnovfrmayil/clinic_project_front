@@ -25,9 +25,11 @@ import { productImage } from "@/lib/media";
 export default function ProductCard({
   product,
   onNavigate,
+  layered = false,
 }: {
   product: Product;
   onNavigate?: () => void;
+  layered?: boolean;
 }) {
   const { add } = useCart();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -87,18 +89,24 @@ export default function ProductCard({
         />
       </div>
 
-      <div className="relative flex flex-1 flex-col gap-3 p-5">
-        <div className="text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+      <div className="relative flex min-w-0 flex-1 flex-col gap-3 p-5">
+        <div
+          className={`truncate text-[11px] uppercase tracking-[0.14em] text-silver${layered ? " font-bold" : ""}`}
+        >
           {[brand, category, variantLabel(variant)].filter(Boolean).join(" · ")}
         </div>
-        <h3 className="font-medium leading-snug transition-colors group-hover:text-ion">
+        <h3 className="truncate font-medium leading-snug transition-colors group-hover:text-ion">
           {product.name}
         </h3>
         {product.description && (
-          <p className="line-clamp-2 text-sm text-silver">{product.description}</p>
+          <p
+            className={`truncate text-sm text-silver-dim${layered ? " font-light" : ""}`}
+          >
+            {product.description}
+          </p>
         )}
 
-        <div className="mt-auto flex items-end justify-between gap-3 pt-3">
+        <div className="mt-auto flex items-start justify-between gap-3 pt-3">
           <PriceTag
             price={price}
             oldPrice={mrp > price ? mrp : undefined}
