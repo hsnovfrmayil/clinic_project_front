@@ -80,8 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       try {
         const profile = await authApi.fetchMe(active);
-        const { refresh_token } = authApi.readStoredTokens();
-        persist(active, profile, refresh_token);
+        const latest = authApi.readStoredTokens();
+        persist(latest.access_token || active, profile, latest.refresh_token);
         return profile;
       } catch {
         persist(null, null, null);
@@ -116,17 +116,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         try {
           const profile = await authApi.fetchMe(savedToken);
-          if (!cancelled) persist(savedToken, profile, refresh_token);
+          const latest = authApi.readStoredTokens();
+          if (!cancelled) {
+            persist(
+              latest.access_token || savedToken,
+              profile,
+              latest.refresh_token ?? refresh_token
+            );
+          }
         } catch {
-          if (refresh_token) {
+          const latest = authApi.readStoredTokens();
+          const untouched =
+            Boolean(refresh_token) &&
+            latest.refresh_token === refresh_token &&
+            latest.access_token === savedToken;
+          if (untouched && refresh_token) {
             try {
               const tokens = await authApi.refreshTokens(refresh_token);
               const profile = await authApi.fetchMe(tokens.access_token);
+              const after = authApi.readStoredTokens();
               if (!cancelled) {
                 persist(
-                  tokens.access_token,
+                  after.access_token || tokens.access_token,
                   profile,
-                  tokens.refresh_token ?? refresh_token
+                  after.refresh_token ?? tokens.refresh_token ?? refresh_token
                 );
               }
               return;
@@ -157,9 +170,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       persist(nextToken, nextUser ?? user, refreshToken ?? existing);
       void authApi
         .fetchMe(nextToken)
-        .then((profile) =>
-          persist(nextToken, profile, refreshToken ?? existing)
-        )
+        .then((profile) => {
+          const latest = authApi.readStoredTokens();
+          persist(
+            latest.access_token || nextToken,
+            profile,
+            latest.refresh_token ?? refreshToken ?? existing
+          );
+        })
         .catch(() => {
           /* keep token; profile optional until next refresh */
         });
@@ -172,7 +190,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const tokens = await authApi.login(payload);
       persist(tokens.access_token, { email: payload.email }, tokens.refresh_token ?? null);
       const profile = await authApi.fetchMe(tokens.access_token);
-      persist(tokens.access_token, profile, tokens.refresh_token ?? null);
+      const latest = authApi.readStoredTokens();
+      persist(
+        latest.access_token || tokens.access_token,
+        profile,
+        latest.refresh_token ?? tokens.refresh_token ?? null
+      );
     },
     [persist]
   );
