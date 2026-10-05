@@ -45,15 +45,31 @@ export default function Footer() {
             </div>
           </div>
 
-          <div className="md:col-start-4">
+          <div className="md:col-start-3">
             <h4 className="text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-              Магазин
+              Покупателям
             </h4>
             <ul className="mt-4 flex flex-col gap-3 text-sm text-silver">
-              <li><Link href="/catalog" className="hover:text-ion">Все продукты</Link></li>
-              <li><Link href="/catalog?category=Сыворотки" className="hover:text-ion">Сыворотки</Link></li>
-              <li><Link href="/catalog?category=Кремы" className="hover:text-ion">Кремы</Link></li>
-              <li><Link href="/catalog?category=Домашние+устройства" className="hover:text-ion">Устройства</Link></li>
+              <li><Link href="#" className="hover:text-ion">Доставка и оплата</Link></li>
+              <li><Link href="#" className="hover:text-ion">Возврат и обмен</Link></li>
+              <li><Link href="#" className="hover:text-ion">Бонусная программа</Link></li>
+              <li><Link href="#" className="hover:text-ion">Подарочные сертификаты</Link></li>
+              <li><Link href="#" className="hover:text-ion">О компании</Link></li>
+              <li><Link href="#" className="hover:text-ion">Контакты</Link></li>
+            </ul>
+          </div>
+
+          <div className="md:col-start-4">
+            <h4 className="text-[11px] uppercase tracking-[0.14em] text-silver-dim">
+              Правовая информация
+            </h4>
+            <ul className="mt-4 flex flex-col gap-3 text-sm text-silver">
+              <li><Link href="#" className="hover:text-ion">Публичная оферта</Link></li>
+              <li><Link href="#" className="hover:text-ion">Политика обработки персональных данных</Link></li>
+              <li><Link href="#" className="hover:text-ion">Согласие на обработку персональных данных</Link></li>
+              <li><Link href="#" className="hover:text-ion">Согласие на получение рекламных сообщений</Link></li>
+              <li><Link href="#" className="hover:text-ion">Пользовательское соглашение</Link></li>
+              <li><Link href="#" className="hover:text-ion">Политика использования файлов cookie</Link></li>
             </ul>
           </div>
         </div>

@@ -75,6 +75,8 @@ function AuthForm() {
       : ""
   );
   const [pending, setPending] = useState(false);
+  const [personalDataConsent, setPersonalDataConsent] = useState(false);
+  const [marketingConsent, setMarketingConsent] = useState(false);
 
   const isLogin = mode === "login";
   const needsPhone = channel === "sms";
@@ -537,6 +539,31 @@ function AuthForm() {
                         />
                       </label>
                     </>
+                  )}
+
+                  {mode === "register" && step === "form" && (
+                    <div className="space-y-3">
+                      <label className="flex items-start gap-3 text-sm leading-snug text-silver">
+                        <input
+                          type="checkbox"
+                          checked={personalDataConsent}
+                          onChange={(e) => setPersonalDataConsent(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-current"
+                        />
+                        <span>Я даю согласие на обработку персональных данных.</span>
+                      </label>
+                      <label className="flex items-start gap-3 text-sm leading-snug text-silver">
+                        <input
+                          type="checkbox"
+                          checked={marketingConsent}
+                          onChange={(e) => setMarketingConsent(e.target.checked)}
+                          className="mt-0.5 h-4 w-4 shrink-0 accent-current"
+                        />
+                        <span>
+                          Хочу получать новости EONAGE, информацию об акциях и специальных предложениях.
+                        </span>
+                      </label>
+                    </div>
                   )}
 
                   {info && <p className="text-sm text-ion">{info}</p>}

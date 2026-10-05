@@ -88,7 +88,7 @@ export default function BrandShowcase({ brands }: { brands: ShowcaseBrand[] }) {
         </div>
 
         <div className="relative lg:sticky lg:top-28 lg:self-start">
-          <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] bg-panel-2 sm:aspect-[5/6] lg:aspect-[4/5]">
+          <div className="relative aspect-[837/1024] w-full overflow-hidden rounded-[2rem] bg-panel-2">
             <AnimatePresence mode="wait">
               <motion.div
                 key={active.id}
@@ -102,7 +102,8 @@ export default function BrandShowcase({ brands }: { brands: ShowcaseBrand[] }) {
                   src={active.image}
                   alt={active.name}
                   className="h-full w-full"
-                  imageClassName="object-cover"
+                  imageClassName="!object-cover"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
                   bottleClassName="h-56"
                 />
               </motion.div>

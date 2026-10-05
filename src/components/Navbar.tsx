@@ -17,16 +17,16 @@ const LINKS = [
   { href: "/catalog", label: "Каталог" },
   { href: "/brands", label: "Бренды" },
   { href: "/#technology", label: "Технологии" },
-  { href: "/#clinic", label: "О клинике" },
+  { href: "/#clinic", label: "РЕЗУЛЬТАТЫ" },
 ];
 
 const BOOKING_OPTIONS = [
   {
-    label: "Наличие акне",
+    label: "Лечение акне",
     href: "https://t.me/eonagebysabisoy",
   },
   {
-    label: "Подбор уход",
+    label: "Подбор ухода",
     href: "https://t.me/eonagebysabisoy",
   },
 ] as const;
@@ -55,7 +55,7 @@ function BookingDropdown({ onNavigate }: { onNavigate?: () => void }) {
         aria-expanded={open}
         aria-haspopup="menu"
       >
-        Запись
+        Записаться
         <ChevronDown
           size={14}
           className={clsx("transition-transform duration-200", open && "rotate-180")}
@@ -219,7 +219,7 @@ export default function Navbar() {
             ))}
             <div className="mt-2 border-t border-line pt-3">
               <p className="py-1 text-[11px] uppercase tracking-[0.14em] text-silver-dim">
-                Запись
+                Записаться
               </p>
               {BOOKING_OPTIONS.map((option) => (
                 <a
