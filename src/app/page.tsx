@@ -4,6 +4,7 @@ import ProductBottle from "@/components/ProductBottle";
 import Reveal from "@/components/Reveal";
 import DiagonalMarquee from "@/components/DiagonalMarquee";
 import HeroSlider from "@/components/HeroSlider";
+import ScanCompare from "@/components/ScanCompare";
 import { fetchProducts, fetchSliders } from "@/lib/api/catalog";
 import { mediaUrl } from "@/lib/media";
 import { ScanFace, FlaskConical, ShieldCheck } from "lucide-react";
@@ -116,6 +117,10 @@ export default async function Home() {
           </div>
         </section>
       )}
+
+      <section className="mx-auto max-w-7xl px-6 pb-16 lg:px-10">
+        <ScanCompare />
+      </section>
 
       {/* BONUS PROGRAM CTA */}
       <section className="mx-auto max-w-7xl px-6 pb-24 lg:px-10">

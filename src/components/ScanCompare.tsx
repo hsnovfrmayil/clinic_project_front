@@ -3,20 +3,8 @@
 import { useRef, useState } from "react";
 import { MoveHorizontal } from "lucide-react";
 
-const METRICS_BEFORE = [
-  { label: "Увлажнённость", value: 42 },
-  { label: "Эластичность", value: 38 },
-  { label: "Ровный тон", value: 51 },
-];
-
-const METRICS_AFTER = [
-  { label: "Увлажнённость", value: 87 },
-  { label: "Эластичность", value: 91 },
-  { label: "Ровный тон", value: 94 },
-];
-
 export default function ScanCompare() {
-  const [pos, setPos] = useState(52);
+  const [pos, setPos] = useState(50);
   const containerRef = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
 
@@ -32,81 +20,48 @@ export default function ScanCompare() {
     <div
       ref={containerRef}
       className="relative aspect-[4/3] w-full touch-none select-none overflow-hidden rounded-3xl border border-line bg-panel-2 sm:aspect-[16/9]"
+      onPointerDown={(e) => {
+        dragging.current = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        updateFromClientX(e.clientX);
+      }}
       onPointerMove={(e) => dragging.current && updateFromClientX(e.clientX)}
       onPointerUp={() => (dragging.current = false)}
       onPointerCancel={() => (dragging.current = false)}
     >
-      {/* BEFORE layer */}
+      <img
+        src="/compare/before.jpg"
+        alt=""
+        draggable={false}
+        className="absolute inset-0 h-full w-full object-contain"
+      />
+      <span className="absolute top-4 right-4 rounded-full border border-white/30 bg-ink/50 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-white">
+        До
+      </span>
+
       <div
-        className="absolute inset-0 flex flex-col justify-between p-6 sm:p-8"
-        style={{
-          background:
-            "radial-gradient(circle at 30% 30%, rgba(214,110,90,0.16), transparent 60%), #15130f",
-        }}
+        className="absolute inset-0"
+        style={{ clipPath: `inset(0 ${100 - pos}% 0 0)` }}
       >
-        <span className="w-fit rounded-full border border-line px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-silver">
-          Скан · До
+        <img
+          src="/compare/after.jpg"
+          alt=""
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-contain"
+        />
+        <span className="absolute top-4 left-4 rounded-full border border-white/30 bg-ink/50 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-white">
+          После
         </span>
-        <div className="flex max-w-xs flex-col gap-2.5">
-          {METRICS_BEFORE.map((m) => (
-            <div key={m.label}>
-              <div className="mb-1 flex justify-between text-[11px] text-silver-dim">
-                <span>{m.label}</span>
-                <span>{m.value}%</span>
-              </div>
-              <div className="h-1 rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-[#d66e5a]"
-                  style={{ width: `${m.value}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
 
-      {/* AFTER layer, clipped by slider position */}
       <div
-        className="scan-grid absolute inset-0 flex flex-col justify-between p-6 sm:p-8"
-        style={{
-          clipPath: `inset(0 ${100 - pos}% 0 0)`,
-          background:
-            "radial-gradient(circle at 70% 30%, rgba(176,190,204,0.18), transparent 60%), #0c1116",
-        }}
-      >
-        <span className="ml-auto w-fit rounded-full border border-ion/50 bg-ion/10 px-3 py-1 text-[10px] uppercase tracking-[0.14em] text-ion">
-          Скан · После
-        </span>
-        <div className="ml-auto flex max-w-xs flex-col gap-2.5">
-          {METRICS_AFTER.map((m) => (
-            <div key={m.label}>
-              <div className="mb-1 flex justify-between text-[11px] text-silver">
-                <span>{m.label}</span>
-                <span className="text-ion">{m.value}%</span>
-              </div>
-              <div className="h-1 rounded-full bg-white/10">
-                <div
-                  className="h-full rounded-full bg-ion"
-                  style={{ width: `${m.value}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* divider handle */}
-      <div
-        className="absolute top-0 bottom-0 z-10 w-px bg-ion/70"
+        className="absolute top-0 bottom-0 z-10 w-px bg-white/80"
         style={{ left: `${pos}%` }}
       >
         <button
-          onPointerDown={(e) => {
-            dragging.current = true;
-            e.currentTarget.setPointerCapture(e.pointerId);
-          }}
+          type="button"
           aria-label="Перетащите, чтобы сравнить до и после"
-          className="absolute top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-ion bg-ink text-ion shadow-[0_0_24px_rgba(176,190,204,0.45)]"
+          className="absolute top-1/2 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-white/70 bg-ink/80 text-white shadow-[0_0_24px_rgba(0,0,0,0.35)]"
         >
           <MoveHorizontal size={16} />
         </button>
